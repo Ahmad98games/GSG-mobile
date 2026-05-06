@@ -33,6 +33,11 @@ jobs:
           cd textile-mobile
           npm install --legacy-peer-deps
 
+      - name: Prebuild Android
+        run: |
+          cd textile-mobile
+          npx expo prebuild --platform android --no-install
+
       - name: Build Android APK
         run: |
           cd textile-mobile/android
