@@ -1,0 +1,151 @@
+"filename", "language", "JSON", "Markdown", "TypeScript JSX", "TypeScript", "Python", "JavaScript", "comment", "blank", "total"
+"c:\mobile system manager\PERFORMANCE_BASELINE.md", "Markdown", 0, 23, 0, 0, 0, 0, 0, 5, 28
+"c:\mobile system manager\textile-mobile\MOBILE_SMOKE_TEST.md", "Markdown", 0, 39, 0, 0, 0, 0, 0, 7, 46
+"c:\mobile system manager\textile-mobile\PERFORMANCE_BASELINE.md", "Markdown", 0, 29, 0, 0, 0, 0, 0, 6, 35
+"c:\mobile system manager\textile-mobile\app\(app)\_layout.tsx", "TypeScript JSX", 0, 0, 4, 0, 0, 0, 0, 1, 5
+"c:\mobile system manager\textile-mobile\app\(app)\cctv\page.tsx", "TypeScript JSX", 0, 0, 8, 0, 0, 0, 0, 0, 8
+"c:\mobile system manager\textile-mobile\app\(app)\command.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\mobile system manager\textile-mobile\app\(app)\dashboard.tsx", "TypeScript JSX", 0, 0, 5, 0, 0, 0, 0, 0, 5
+"c:\mobile system manager\textile-mobile\app\(app)\dispatch\order\[id].tsx", "TypeScript JSX", 0, 0, 4, 0, 0, 0, 0, 0, 4
+"c:\mobile system manager\textile-mobile\app\(app)\finance\page.tsx", "TypeScript JSX", 0, 0, 5, 0, 0, 0, 0, 1, 6
+"c:\mobile system manager\textile-mobile\app\(app)\index.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, 0, 0, 3
+"c:\mobile system manager\textile-mobile\app\(app)\inward\index.tsx", "TypeScript JSX", 0, 0, 4, 0, 0, 0, 0, 0, 4
+"c:\mobile system manager\textile-mobile\app\(app)\manager\index.tsx", "TypeScript JSX", 0, 0, 2, 0, 0, 0, 0, 0, 2
+"c:\mobile system manager\textile-mobile\app\(app)\messages.tsx", "TypeScript JSX", 0, 0, -1, 0, 0, 0, 1, 0, 0
+"c:\mobile system manager\textile-mobile\app\(app)\messages\[id].tsx", "TypeScript JSX", 0, 0, 13, 0, 0, 0, 0, 2, 15
+"c:\mobile system manager\textile-mobile\app\(app)\messages\index.tsx", "TypeScript JSX", 0, 0, 8, 0, 0, 0, 0, 1, 9
+"c:\mobile system manager\textile-mobile\app\(app)\notifications\index.tsx", "TypeScript JSX", 0, 0, 287, 0, 0, 0, 0, 28, 315
+"c:\mobile system manager\textile-mobile\app\(app)\production\index.tsx", "TypeScript JSX", 0, 0, 5, 0, 0, 0, 0, 0, 5
+"c:\mobile system manager\textile-mobile\app\(app)\settings\branches.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, 0, 0, 3
+"c:\mobile system manager\textile-mobile\app\(app)\settings\notifications.tsx", "TypeScript JSX", 0, 0, 260, 0, 0, 0, 6, 20, 286
+"c:\mobile system manager\textile-mobile\app\(app)\settings\plan.tsx", "TypeScript JSX", 0, 0, 332, 0, 0, 0, 4, 18, 354
+"c:\mobile system manager\textile-mobile\app\(app)\vision.tsx", "TypeScript JSX", 0, 0, 4, 0, 0, 0, 0, 0, 4
+"c:\mobile system manager\textile-mobile\app\(auth)\pair.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, 0, 0, 1
+"c:\mobile system manager\textile-mobile\app\(mesh)\messenger.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, 0, 0, 3
+"c:\mobile system manager\textile-mobile\app\_layout.tsx", "TypeScript JSX", 0, 0, 27, 0, 0, 0, 6, 6, 39
+"c:\mobile system manager\textile-mobile\dist\metadata.json", "JSON", 1, 0, 0, 0, 0, 0, 0, 0, 1
+"c:\mobile system manager\textile-mobile\index.js", "JavaScript", 0, 0, 0, 0, 0, 3, 0, 1, 4
+"c:\mobile system manager\textile-mobile\jest.config.js", "JavaScript", 0, 0, 0, 0, 0, 10, 0, 1, 11
+"c:\mobile system manager\textile-mobile\package-lock.json", "JSON", 2587, 0, 0, 0, 0, 0, 0, 0, 2587
+"c:\mobile system manager\textile-mobile\package.json", "JSON", 13, 0, 0, 0, 0, 0, 0, 0, 13
+"c:\mobile system manager\textile-mobile\src\components\BatchLedgerView.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\CustomNumpad.tsx", "TypeScript JSX", 0, 0, 2, 0, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\EmergencyButton.tsx", "TypeScript JSX", 0, 0, 2, 0, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\IndustrialErrorBoundary.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\IndustrialSyncIndicator.tsx", "TypeScript JSX", 0, 0, 5, 0, 0, 0, -5, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\PhotoEvidence.tsx", "TypeScript JSX", 0, 0, 8, 0, 0, 0, -1, 0, 7
+"c:\mobile system manager\textile-mobile\src\components\QuickActionButton.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\Scanner\IntelligenceRouter.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\TierGate.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, -2, -1, 0
+"c:\mobile system manager\textile-mobile\src\components\alerts\RedAlertOverlay.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\charts\TelemetryDashboard.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\gis\PathFinderView.tsx", "TypeScript JSX", 0, 0, 2, 0, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\tier\DeviceCounterCard.tsx", "TypeScript JSX", 0, 0, 110, 0, 0, 0, 0, 12, 122
+"c:\mobile system manager\textile-mobile\src\components\tier\FeatureLock.tsx", "TypeScript JSX", 0, 0, 93, 0, 0, 0, 0, 11, 104
+"c:\mobile system manager\textile-mobile\src\components\tier\TierBanner.tsx", "TypeScript JSX", 0, 0, 138, 0, 0, 0, 0, 12, 150
+"c:\mobile system manager\textile-mobile\src\components\tier\UpgradeBottomSheet.tsx", "TypeScript JSX", 0, 0, 275, 0, 0, 0, 4, 24, 303
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\CartesianChart.tsx", "TypeScript JSX", 0, 0, 32, 0, 0, 0, -26, 1, 7
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\components\XAxis.tsx", "TypeScript JSX", 0, 0, 11, 0, 0, 0, -11, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\components\YAxis.tsx", "TypeScript JSX", 0, 0, 4, 0, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\contexts\CartesianChartContext.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\contexts\CartesianTransformContext.tsx", "TypeScript JSX", 0, 0, 2, 0, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useBarWidth.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useBuildChartAxis.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useChartPressState.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useChartTransformState.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useStackedAreaPaths.ts", "TypeScript", 0, 0, 0, 13, 0, 0, -13, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useStackedBarPaths.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\utils\curves.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\cartesian\utils\transformInputData.ts", "TypeScript", 0, 0, 0, 28, 0, 0, -28, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\hooks\useAnimatedPath.ts", "TypeScript", 0, 0, 0, 19, 0, 0, -13, 2, 8
+"c:\mobile system manager\textile-mobile\src\components\victory\hooks\useFunctionRef.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\index.ts", "TypeScript", 0, 0, 0, 7, 0, 0, -7, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\pie\PieChart.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\pie\PieLabel.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\pie\PieSliceAngularInset.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\pie\hooks\useSliceAngularInsetPath.ts", "TypeScript", 0, 0, 0, 7, 0, 0, -7, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\pie\hooks\useSlicePath.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\pie\utils\innerRadius.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\polar\PolarChart.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\shared\GestureHandler.tsx", "TypeScript JSX", 0, 0, 7, 0, 0, 0, -7, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\types.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\utils\findClosestPoint.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\utils\normalizeYAxisTicks.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\utils\tickHelpers.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\components\victory\utils\transform.ts", "TypeScript", 0, 0, 0, 5, 0, 0, -5, 0, 0
+"c:\mobile system manager\textile-mobile\src\constants\DesignSystem.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\constants\theme.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useBiometricShield.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useBiometrics.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useCryptoEngine.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useHeartbeat.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useInterval.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useMesh.ts", "TypeScript", 0, 0, 0, 10, 0, 0, -10, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useMessenger.ts", "TypeScript", 0, 0, 0, 8, 0, 0, -9, 0, -1
+"c:\mobile system manager\textile-mobile\src\hooks\useScanner.ts", "TypeScript", 0, 0, 0, 11, 0, 0, -11, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useTacticalSync.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useTaskSubscriber.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\hooks\useTransaction.ts", "TypeScript", 0, 0, 0, 7, 0, 0, -7, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\CryptoService.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\HeartbeatService.ts", "TypeScript", 0, 0, 0, 8, 0, 0, -8, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\MobileCrypto.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\PairingManager.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\auth\NoxisGuardian\index.js", "JavaScript", 0, 0, 0, 0, 0, 7, 0, 0, 7
+"c:\mobile system manager\textile-mobile\src\lib\auth\verifyTier.ts", "TypeScript", 0, 0, 0, -18, 0, 0, -3, -4, -25
+"c:\mobile system manager\textile-mobile\src\lib\db\meshDb.ts", "TypeScript", 0, 0, 0, 37, 0, 0, -5, 4, 36
+"c:\mobile system manager\textile-mobile\src\lib\gis\NoxisPathFinder.ts", "TypeScript", 0, 0, 0, 5, 0, 0, -5, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\mesh\NoxisSynapse\url.ts", "TypeScript", 0, 0, 0, 7, 0, 0, -7, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\mesh\mesh-client.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\mesh\tcp-client.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\notifications\HeadlessTask.ts", "TypeScript", 0, 0, 0, 54, 0, 0, 0, 7, 61
+"c:\mobile system manager\textile-mobile\src\lib\notifications\NotificationChannels.ts", "TypeScript", 0, 0, 0, 79, 0, 0, 0, 6, 85
+"c:\mobile system manager\textile-mobile\src\lib\notifications\NotificationService.ts", "TypeScript", 0, 0, 0, 238, 0, 0, 0, 31, 269
+"c:\mobile system manager\textile-mobile\src\lib\notifications\SentinelService.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\notifications\notifee\NotifeeNativeError.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\persona\PersonaEngine.ts", "TypeScript", 0, 0, 0, 50, 0, 0, 0, 1, 51
+"c:\mobile system manager\textile-mobile\src\lib\printer.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\types.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\lib\vision\NoxisScanEngine.ts", "TypeScript", 0, 0, 0, 7, 0, 0, -7, 0, 0
+"c:\mobile system manager\textile-mobile\src\proto\messages.d.ts", "TypeScript", 0, 0, 0, 4288, 0, 0, 0, 1039, 5327
+"c:\mobile system manager\textile-mobile\src\proto\messages.js", "JavaScript", 0, 0, 0, 0, 0, 13221, 4, 852, 14077
+"c:\mobile system manager\textile-mobile\src\screens\InwardScan.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\screens\QRScannerScreen.tsx", "TypeScript JSX", 0, 0, 5, 0, 0, 0, -5, 0, 0
+"c:\mobile system manager\textile-mobile\src\screens\ScannerScreen.tsx", "TypeScript JSX", 0, 0, 8, 0, 0, 0, -8, 0, 0
+"c:\mobile system manager\textile-mobile\src\screens\TacticalChat.tsx", "TypeScript JSX", 0, 0, 5, 0, 0, 0, -5, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\BranchService.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\EnergyShieldService.ts", "TypeScript", 0, 0, 0, 5, 0, 0, -5, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\ErrorLoggingService.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\FeedbackService.ts", "TypeScript", 0, 0, 0, 7, 0, 0, -7, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\HeartbeatService.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\MeshEventBus.ts", "TypeScript", 0, 0, 0, 5, 0, 0, 0, 1, 6
+"c:\mobile system manager\textile-mobile\src\services\MessageService.ts", "TypeScript", 0, 0, 0, 15, 0, 0, -5, 4, 14
+"c:\mobile system manager\textile-mobile\src\services\ModelManager.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\NoxisGuardianService.ts", "TypeScript", 0, 0, 0, 8, 0, 0, -7, 0, 1
+"c:\mobile system manager\textile-mobile\src\services\NoxisSynapseService.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\NspService.ts", "TypeScript", 0, 0, 0, 86, 0, 0, -4, 16, 98
+"c:\mobile system manager\textile-mobile\src\services\OfflineQueueManager.ts", "TypeScript", 0, 0, 0, 7, 0, 0, -6, 0, 1
+"c:\mobile system manager\textile-mobile\src\services\PrinterService.ts", "TypeScript", 0, 0, 0, 10, 0, 0, -10, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\ProtobufService.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\TCPClientService.ts", "TypeScript", 0, 0, 0, 31, 0, 0, -9, 4, 26
+"c:\mobile system manager\textile-mobile\src\services\UpdateService.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"c:\mobile system manager\textile-mobile\src\services\UpgradeSheetManager.ts", "TypeScript", 0, 0, 0, 11, 0, 0, 0, 3, 14
+"c:\mobile system manager\textile-mobile\src\services\VoiceFileManager.ts", "TypeScript", 0, 0, 0, 11, 0, 0, -4, 1, 8
+"c:\mobile system manager\textile-mobile\src\store\AuthStore.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\store\BridgeStatusStore.ts", "TypeScript", 0, 0, 0, 112, 0, 0, -2, 9, 119
+"c:\mobile system manager\textile-mobile\src\store\ConnectionContext.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\store\MovementStore.ts", "TypeScript", 0, 0, 0, 1, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\store\NodeVocabularyContext.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\store\StatsStore.ts", "TypeScript", 0, 0, 0, 2, 0, 0, -2, 0, 0
+"c:\mobile system manager\textile-mobile\src\store\VisionStore.ts", "TypeScript", 0, 0, 0, 5, 0, 0, -5, 0, 0
+"c:\mobile system manager\textile-mobile\src\store\VocabularyContext.tsx", "TypeScript JSX", 0, 0, 1, 0, 0, 0, -1, 0, 0
+"c:\mobile system manager\textile-mobile\src\store\useProductStore.ts", "TypeScript", 0, 0, 0, 8, 0, 0, -7, 0, 1
+"c:\mobile system manager\textile-mobile\src\stores\QuietHoursStore.ts", "TypeScript", 0, 0, 0, 104, 0, 0, 0, 19, 123
+"c:\mobile system manager\textile-mobile\src\stores\meshStore.ts", "TypeScript", 0, 0, 0, 13, 0, 0, -13, 0, 0
+"c:\mobile system manager\textile-mobile\src\tests\integration\mobile-smoke.test.ts", "TypeScript", 0, 0, 0, 346, 0, 0, 0, 76, 422
+"c:\mobile system manager\textile-mobile\src\utils\ScannerRouter.ts", "TypeScript", 0, 0, 0, 6, 0, 0, -6, 0, 0
+"c:\mobile system manager\textile-mobile\src\vision\vision_engine.py", "Python", 0, 0, 0, 0, 3, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\src\vision\watchdog.py", "Python", 0, 0, 0, 0, 5, 0, -5, 0, 0
+"c:\mobile system manager\textile-mobile\supabase\functions\get-download-url\index.ts", "TypeScript", 0, 0, 0, 3, 0, 0, -3, 0, 0
+"c:\mobile system manager\textile-mobile\supabase\functions\mobile_logic.ts", "TypeScript", 0, 0, 0, 6, 0, 0, -6, 0, 0
+"c:\mobile system manager\textile-mobile\supabase\functions\validate-license\index.ts", "TypeScript", 0, 0, 0, 4, 0, 0, -4, 0, 0
+"Total", "-", 2601, 91, 1714, 5772, 8, 13241, -436, 2227, 25218

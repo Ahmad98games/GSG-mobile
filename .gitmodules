@@ -1,0 +1,3 @@
+[submodule "textile-mobile"]
+	path = textile-mobile
+	url = https://github.com/Ahmad98games/GSG-mobile-compatible.git

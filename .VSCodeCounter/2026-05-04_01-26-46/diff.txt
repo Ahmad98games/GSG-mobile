@@ -1,0 +1,248 @@
+Date : 2026-05-04 01:26:46
+Directory : c:\mobile system manager
+Total : 149 files,  23427 codes, -436 comments, 2227 blanks, all 25218 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JavaScript     |          4 |     13,241 |          4 |        854 |     14,099 |
+| TypeScript     |         84 |      5,772 |       -347 |      1,219 |      6,644 |
+| JSON           |          3 |      2,601 |          0 |          0 |      2,601 |
+| TypeScript JSX |         53 |      1,714 |        -85 |        136 |      1,765 |
+| Markdown       |          3 |         91 |          0 |         18 |        109 |
+| Python         |          2 |          8 |         -8 |          0 |          0 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-----------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                            | files      | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                               |        149 |     23,427 |       -436 |      2,227 |     25,218 |
+| . (Files)                                                                                                       |          1 |         23 |          0 |          5 |         28 |
+| textile-mobile                                                                                                  |        148 |     23,404 |       -436 |      2,222 |     25,190 |
+| textile-mobile (Files)                                                                                          |          6 |      2,681 |          0 |         15 |      2,696 |
+| textile-mobile\app                                                                                              |         21 |        978 |         17 |         77 |      1,072 |
+| textile-mobile\app (Files)                                                                                      |          1 |         27 |          6 |          6 |         39 |
+| textile-mobile\app\(app)                                                                                        |         18 |        947 |         11 |         71 |      1,029 |
+| textile-mobile\app\(app) (Files)                                                                                |          6 |         16 |          1 |          1 |         18 |
+| textile-mobile\app\(app)\cctv                                                                                   |          1 |          8 |          0 |          0 |          8 |
+| textile-mobile\app\(app)\dispatch                                                                               |          1 |          4 |          0 |          0 |          4 |
+| textile-mobile\app\(app)\dispatch\order                                                                         |          1 |          4 |          0 |          0 |          4 |
+| textile-mobile\app\(app)\finance                                                                                |          1 |          5 |          0 |          1 |          6 |
+| textile-mobile\app\(app)\inward                                                                                 |          1 |          4 |          0 |          0 |          4 |
+| textile-mobile\app\(app)\manager                                                                                |          1 |          2 |          0 |          0 |          2 |
+| textile-mobile\app\(app)\messages                                                                               |          2 |         21 |          0 |          3 |         24 |
+| textile-mobile\app\(app)\notifications                                                                          |          1 |        287 |          0 |         28 |        315 |
+| textile-mobile\app\(app)\production                                                                             |          1 |          5 |          0 |          0 |          5 |
+| textile-mobile\app\(app)\settings                                                                               |          3 |        595 |         10 |         38 |        643 |
+| textile-mobile\app\(auth)                                                                                       |          1 |          1 |          0 |          0 |          1 |
+| textile-mobile\app\(mesh)                                                                                       |          1 |          3 |          0 |          0 |          3 |
+| textile-mobile\dist                                                                                             |          1 |          1 |          0 |          0 |          1 |
+| textile-mobile\src                                                                                              |        117 |     19,731 |       -440 |      2,130 |     21,421 |
+| textile-mobile\src\components                                                                                   |         45 |        822 |       -182 |         61 |        701 |
+| textile-mobile\src\components (Files)                                                                           |          8 |         23 |        -15 |         -1 |          7 |
+| textile-mobile\src\components\Scanner                                                                           |          1 |          3 |         -3 |          0 |          0 |
+| textile-mobile\src\components\alerts                                                                            |          1 |          3 |         -3 |          0 |          0 |
+| textile-mobile\src\components\charts                                                                            |          1 |          3 |         -3 |          0 |          0 |
+| textile-mobile\src\components\gis                                                                               |          1 |          2 |         -2 |          0 |          0 |
+| textile-mobile\src\components\tier                                                                              |          4 |        616 |          4 |         59 |        679 |
+| textile-mobile\src\components\victory                                                                           |         29 |        172 |       -160 |          3 |         15 |
+| textile-mobile\src\components\victory (Files)                                                                   |          2 |         10 |        -10 |          0 |          0 |
+| textile-mobile\src\components\victory\cartesian                                                                 |         13 |        101 |        -95 |          1 |          7 |
+| textile-mobile\src\components\victory\cartesian\components                                                      |          2 |         15 |        -15 |          0 |          0 |
+| textile-mobile\src\components\victory\cartesian\contexts                                                        |          2 |          3 |         -3 |          0 |          0 |
+| textile-mobile\src\components\victory\cartesian\hooks                                                           |          6 |         22 |        -22 |          0 |          0 |
+| textile-mobile\src\components\victory\cartesian\utils                                                           |          2 |         29 |        -29 |          0 |          0 |
+| textile-mobile\src\components\victory\hooks                                                                     |          2 |         20 |        -14 |          2 |          8 |
+| textile-mobile\src\components\victory\pie                                                                       |          6 |         20 |        -20 |          0 |          0 |
+| textile-mobile\src\components\victory\pie\hooks                                                                 |          2 |         11 |        -11 |          0 |          0 |
+| textile-mobile\src\components\victory\pie\utils                                                                 |          1 |          2 |         -2 |          0 |          0 |
+| textile-mobile\src\components\victory\polar                                                                     |          1 |          1 |         -1 |          0 |          0 |
+| textile-mobile\src\components\victory\shared                                                                    |          1 |          7 |         -7 |          0 |          0 |
+| textile-mobile\src\components\victory\utils                                                                     |          4 |         13 |        -13 |          0 |          0 |
+| textile-mobile\src\constants                                                                                    |          2 |          2 |         -2 |          0 |          0 |
+| textile-mobile\src\hooks                                                                                        |         11 |         54 |        -55 |          0 |         -1 |
+| textile-mobile\src\lib                                                                                          |         20 |        499 |        -60 |         45 |        484 |
+| textile-mobile\src\lib (Files)                                                                                  |          6 |         21 |        -21 |          0 |          0 |
+| textile-mobile\src\lib\auth                                                                                     |          2 |        -11 |         -3 |         -4 |        -18 |
+| textile-mobile\src\lib\auth (Files)                                                                             |          1 |        -18 |         -3 |         -4 |        -25 |
+| textile-mobile\src\lib\auth\NoxisGuardian                                                                       |          1 |          7 |          0 |          0 |          7 |
+| textile-mobile\src\lib\db                                                                                       |          1 |         37 |         -5 |          4 |         36 |
+| textile-mobile\src\lib\gis                                                                                      |          1 |          5 |         -5 |          0 |          0 |
+| textile-mobile\src\lib\mesh                                                                                     |          3 |         13 |        -13 |          0 |          0 |
+| textile-mobile\src\lib\mesh\NoxisSynapse                                                                        |          1 |          7 |         -7 |          0 |          0 |
+| textile-mobile\src\lib\notifications                                                                            |          5 |        377 |         -6 |         44 |        415 |
+| textile-mobile\src\lib\notifications\notifee                                                                    |          1 |          4 |         -4 |          0 |          0 |
+| textile-mobile\src\lib\persona                                                                                  |          1 |         50 |          0 |          1 |         51 |
+| textile-mobile\src\lib\vision                                                                                   |          1 |          7 |         -7 |          0 |          0 |
+| textile-mobile\src\proto                                                                                        |          2 |     17,509 |          4 |      1,891 |     19,404 |
+| textile-mobile\src\screens                                                                                      |          4 |         19 |        -19 |          0 |          0 |
+| textile-mobile\src\services                                                                                     |         18 |        215 |        -76 |         29 |        168 |
+| textile-mobile\src\store                                                                                        |          9 |        134 |        -23 |          9 |        120 |
+| textile-mobile\src\stores                                                                                       |          2 |        117 |        -13 |         19 |        123 |
+| textile-mobile\src\tests                                                                                        |          1 |        346 |          0 |         76 |        422 |
+| textile-mobile\src\tests\integration                                                                            |          1 |        346 |          0 |         76 |        422 |
+| textile-mobile\src\utils                                                                                        |          1 |          6 |         -6 |          0 |          0 |
+| textile-mobile\src\vision                                                                                       |          2 |          8 |         -8 |          0 |          0 |
+| textile-mobile\supabase                                                                                         |          3 |         13 |        -13 |          0 |          0 |
+| textile-mobile\supabase\functions                                                                               |          3 |         13 |        -13 |          0 |          0 |
+| textile-mobile\supabase\functions\get-download-url                                                              |          1 |          3 |         -3 |          0 |          0 |
+| textile-mobile\supabase\functions\validate-license                                                              |          1 |          4 |         -4 |          0 |          0 |
++-----------------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-----------------------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                                                        | language       | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\mobile system manager\PERFORMANCE_BASELINE.md                                                                | Markdown       |         23 |          0 |          5 |         28 |
+| c:\mobile system manager\textile-mobile\MOBILE_SMOKE_TEST.md                                                    | Markdown       |         39 |          0 |          7 |         46 |
+| c:\mobile system manager\textile-mobile\PERFORMANCE_BASELINE.md                                                 | Markdown       |         29 |          0 |          6 |         35 |
+| c:\mobile system manager\textile-mobile\app\(app)\_layout.tsx                                                   | TypeScript JSX |          4 |          0 |          1 |          5 |
+| c:\mobile system manager\textile-mobile\app\(app)\cctv\page.tsx                                                 | TypeScript JSX |          8 |          0 |          0 |          8 |
+| c:\mobile system manager\textile-mobile\app\(app)\command.tsx                                                   | TypeScript JSX |          1 |          0 |          0 |          1 |
+| c:\mobile system manager\textile-mobile\app\(app)\dashboard.tsx                                                 | TypeScript JSX |          5 |          0 |          0 |          5 |
+| c:\mobile system manager\textile-mobile\app\(app)\dispatch\order\[id].tsx                                       | TypeScript JSX |          4 |          0 |          0 |          4 |
+| c:\mobile system manager\textile-mobile\app\(app)\finance\page.tsx                                              | TypeScript JSX |          5 |          0 |          1 |          6 |
+| c:\mobile system manager\textile-mobile\app\(app)\index.tsx                                                     | TypeScript JSX |          3 |          0 |          0 |          3 |
+| c:\mobile system manager\textile-mobile\app\(app)\inward\index.tsx                                              | TypeScript JSX |          4 |          0 |          0 |          4 |
+| c:\mobile system manager\textile-mobile\app\(app)\manager\index.tsx                                             | TypeScript JSX |          2 |          0 |          0 |          2 |
+| c:\mobile system manager\textile-mobile\app\(app)\messages.tsx                                                  | TypeScript JSX |         -1 |          1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\app\(app)\messages\[id].tsx                                             | TypeScript JSX |         13 |          0 |          2 |         15 |
+| c:\mobile system manager\textile-mobile\app\(app)\messages\index.tsx                                            | TypeScript JSX |          8 |          0 |          1 |          9 |
+| c:\mobile system manager\textile-mobile\app\(app)\notifications\index.tsx                                       | TypeScript JSX |        287 |          0 |         28 |        315 |
+| c:\mobile system manager\textile-mobile\app\(app)\production\index.tsx                                          | TypeScript JSX |          5 |          0 |          0 |          5 |
+| c:\mobile system manager\textile-mobile\app\(app)\settings\branches.tsx                                         | TypeScript JSX |          3 |          0 |          0 |          3 |
+| c:\mobile system manager\textile-mobile\app\(app)\settings\notifications.tsx                                    | TypeScript JSX |        260 |          6 |         20 |        286 |
+| c:\mobile system manager\textile-mobile\app\(app)\settings\plan.tsx                                             | TypeScript JSX |        332 |          4 |         18 |        354 |
+| c:\mobile system manager\textile-mobile\app\(app)\vision.tsx                                                    | TypeScript JSX |          4 |          0 |          0 |          4 |
+| c:\mobile system manager\textile-mobile\app\(auth)\pair.tsx                                                     | TypeScript JSX |          1 |          0 |          0 |          1 |
+| c:\mobile system manager\textile-mobile\app\(mesh)\messenger.tsx                                                | TypeScript JSX |          3 |          0 |          0 |          3 |
+| c:\mobile system manager\textile-mobile\app\_layout.tsx                                                         | TypeScript JSX |         27 |          6 |          6 |         39 |
+| c:\mobile system manager\textile-mobile\dist\metadata.json                                                      | JSON           |          1 |          0 |          0 |          1 |
+| c:\mobile system manager\textile-mobile\index.js                                                                | JavaScript     |          3 |          0 |          1 |          4 |
+| c:\mobile system manager\textile-mobile\jest.config.js                                                          | JavaScript     |         10 |          0 |          1 |         11 |
+| c:\mobile system manager\textile-mobile\package-lock.json                                                       | JSON           |      2,587 |          0 |          0 |      2,587 |
+| c:\mobile system manager\textile-mobile\package.json                                                            | JSON           |         13 |          0 |          0 |         13 |
+| c:\mobile system manager\textile-mobile\src\components\BatchLedgerView.tsx                                      | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\CustomNumpad.tsx                                         | TypeScript JSX |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\EmergencyButton.tsx                                      | TypeScript JSX |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\IndustrialErrorBoundary.tsx                              | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\IndustrialSyncIndicator.tsx                              | TypeScript JSX |          5 |         -5 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\PhotoEvidence.tsx                                        | TypeScript JSX |          8 |         -1 |          0 |          7 |
+| c:\mobile system manager\textile-mobile\src\components\QuickActionButton.tsx                                    | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\Scanner\IntelligenceRouter.ts                            | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\TierGate.tsx                                             | TypeScript JSX |          3 |         -2 |         -1 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\alerts\RedAlertOverlay.tsx                               | TypeScript JSX |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\charts\TelemetryDashboard.tsx                            | TypeScript JSX |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\gis\PathFinderView.tsx                                   | TypeScript JSX |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\tier\DeviceCounterCard.tsx                               | TypeScript JSX |        110 |          0 |         12 |        122 |
+| c:\mobile system manager\textile-mobile\src\components\tier\FeatureLock.tsx                                     | TypeScript JSX |         93 |          0 |         11 |        104 |
+| c:\mobile system manager\textile-mobile\src\components\tier\TierBanner.tsx                                      | TypeScript JSX |        138 |          0 |         12 |        150 |
+| c:\mobile system manager\textile-mobile\src\components\tier\UpgradeBottomSheet.tsx                              | TypeScript JSX |        275 |          4 |         24 |        303 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\CartesianChart.tsx                     | TypeScript JSX |         32 |        -26 |          1 |          7 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\components\XAxis.tsx                   | TypeScript JSX |         11 |        -11 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\components\YAxis.tsx                   | TypeScript JSX |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\contexts\CartesianChartContext.tsx     | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\contexts\CartesianTransformContext.tsx | TypeScript JSX |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useBarWidth.ts                   | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useBuildChartAxis.ts             | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useChartPressState.ts            | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useChartTransformState.ts        | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useStackedAreaPaths.ts           | TypeScript     |         13 |        -13 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\hooks\useStackedBarPaths.ts            | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\utils\curves.ts                        | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\cartesian\utils\transformInputData.ts            | TypeScript     |         28 |        -28 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\hooks\useAnimatedPath.ts                         | TypeScript     |         19 |        -13 |          2 |          8 |
+| c:\mobile system manager\textile-mobile\src\components\victory\hooks\useFunctionRef.ts                          | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\index.ts                                         | TypeScript     |          7 |         -7 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\pie\PieChart.tsx                                 | TypeScript JSX |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\pie\PieLabel.tsx                                 | TypeScript JSX |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\pie\PieSliceAngularInset.tsx                     | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\pie\hooks\useSliceAngularInsetPath.ts            | TypeScript     |          7 |         -7 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\pie\hooks\useSlicePath.ts                        | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\pie\utils\innerRadius.ts                         | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\polar\PolarChart.tsx                             | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\shared\GestureHandler.tsx                        | TypeScript JSX |          7 |         -7 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\types.ts                                         | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\utils\findClosestPoint.ts                        | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\utils\normalizeYAxisTicks.ts                     | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\utils\tickHelpers.ts                             | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\components\victory\utils\transform.ts                               | TypeScript     |          5 |         -5 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\constants\DesignSystem.ts                                           | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\constants\theme.ts                                                  | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useBiometricShield.ts                                         | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useBiometrics.ts                                              | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useCryptoEngine.ts                                            | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useHeartbeat.ts                                               | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useInterval.ts                                                | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useMesh.ts                                                    | TypeScript     |         10 |        -10 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useMessenger.ts                                               | TypeScript     |          8 |         -9 |          0 |         -1 |
+| c:\mobile system manager\textile-mobile\src\hooks\useScanner.ts                                                 | TypeScript     |         11 |        -11 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useTacticalSync.ts                                            | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useTaskSubscriber.ts                                          | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\hooks\useTransaction.ts                                             | TypeScript     |          7 |         -7 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\CryptoService.ts                                                | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\HeartbeatService.ts                                             | TypeScript     |          8 |         -8 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\MobileCrypto.ts                                                 | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\PairingManager.ts                                               | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\auth\NoxisGuardian\index.js                                     | JavaScript     |          7 |          0 |          0 |          7 |
+| c:\mobile system manager\textile-mobile\src\lib\auth\verifyTier.ts                                              | TypeScript     |        -18 |         -3 |         -4 |        -25 |
+| c:\mobile system manager\textile-mobile\src\lib\db\meshDb.ts                                                    | TypeScript     |         37 |         -5 |          4 |         36 |
+| c:\mobile system manager\textile-mobile\src\lib\gis\NoxisPathFinder.ts                                          | TypeScript     |          5 |         -5 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\mesh\NoxisSynapse\url.ts                                        | TypeScript     |          7 |         -7 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\mesh\mesh-client.ts                                             | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\mesh\tcp-client.ts                                              | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\notifications\HeadlessTask.ts                                   | TypeScript     |         54 |          0 |          7 |         61 |
+| c:\mobile system manager\textile-mobile\src\lib\notifications\NotificationChannels.ts                           | TypeScript     |         79 |          0 |          6 |         85 |
+| c:\mobile system manager\textile-mobile\src\lib\notifications\NotificationService.ts                            | TypeScript     |        238 |          0 |         31 |        269 |
+| c:\mobile system manager\textile-mobile\src\lib\notifications\SentinelService.ts                                | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\notifications\notifee\NotifeeNativeError.ts                     | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\persona\PersonaEngine.ts                                        | TypeScript     |         50 |          0 |          1 |         51 |
+| c:\mobile system manager\textile-mobile\src\lib\printer.ts                                                      | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\types.ts                                                        | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\lib\vision\NoxisScanEngine.ts                                       | TypeScript     |          7 |         -7 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\proto\messages.d.ts                                                 | TypeScript     |      4,288 |          0 |      1,039 |      5,327 |
+| c:\mobile system manager\textile-mobile\src\proto\messages.js                                                   | JavaScript     |     13,221 |          4 |        852 |     14,077 |
+| c:\mobile system manager\textile-mobile\src\screens\InwardScan.tsx                                              | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\screens\QRScannerScreen.tsx                                         | TypeScript JSX |          5 |         -5 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\screens\ScannerScreen.tsx                                           | TypeScript JSX |          8 |         -8 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\screens\TacticalChat.tsx                                            | TypeScript JSX |          5 |         -5 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\BranchService.ts                                           | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\EnergyShieldService.ts                                     | TypeScript     |          5 |         -5 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\ErrorLoggingService.ts                                     | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\FeedbackService.ts                                         | TypeScript     |          7 |         -7 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\HeartbeatService.ts                                        | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\MeshEventBus.ts                                            | TypeScript     |          5 |          0 |          1 |          6 |
+| c:\mobile system manager\textile-mobile\src\services\MessageService.ts                                          | TypeScript     |         15 |         -5 |          4 |         14 |
+| c:\mobile system manager\textile-mobile\src\services\ModelManager.ts                                            | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\NoxisGuardianService.ts                                    | TypeScript     |          8 |         -7 |          0 |          1 |
+| c:\mobile system manager\textile-mobile\src\services\NoxisSynapseService.ts                                     | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\NspService.ts                                              | TypeScript     |         86 |         -4 |         16 |         98 |
+| c:\mobile system manager\textile-mobile\src\services\OfflineQueueManager.ts                                     | TypeScript     |          7 |         -6 |          0 |          1 |
+| c:\mobile system manager\textile-mobile\src\services\PrinterService.ts                                          | TypeScript     |         10 |        -10 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\ProtobufService.ts                                         | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\TCPClientService.ts                                        | TypeScript     |         31 |         -9 |          4 |         26 |
+| c:\mobile system manager\textile-mobile\src\services\UpdateService.ts                                           | TypeScript     |          4 |         -4 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\services\UpgradeSheetManager.ts                                     | TypeScript     |         11 |          0 |          3 |         14 |
+| c:\mobile system manager\textile-mobile\src\services\VoiceFileManager.ts                                        | TypeScript     |         11 |         -4 |          1 |          8 |
+| c:\mobile system manager\textile-mobile\src\store\AuthStore.ts                                                  | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\store\BridgeStatusStore.ts                                          | TypeScript     |        112 |         -2 |          9 |        119 |
+| c:\mobile system manager\textile-mobile\src\store\ConnectionContext.tsx                                         | TypeScript JSX |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\store\MovementStore.ts                                              | TypeScript     |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\store\NodeVocabularyContext.tsx                                     | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\store\StatsStore.ts                                                 | TypeScript     |          2 |         -2 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\store\VisionStore.ts                                                | TypeScript     |          5 |         -5 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\store\VocabularyContext.tsx                                         | TypeScript JSX |          1 |         -1 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\store\useProductStore.ts                                            | TypeScript     |          8 |         -7 |          0 |          1 |
+| c:\mobile system manager\textile-mobile\src\stores\QuietHoursStore.ts                                           | TypeScript     |        104 |          0 |         19 |        123 |
+| c:\mobile system manager\textile-mobile\src\stores\meshStore.ts                                                 | TypeScript     |         13 |        -13 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\tests\integration\mobile-smoke.test.ts                              | TypeScript     |        346 |          0 |         76 |        422 |
+| c:\mobile system manager\textile-mobile\src\utils\ScannerRouter.ts                                              | TypeScript     |          6 |         -6 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\vision\vision_engine.py                                             | Python         |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\src\vision\watchdog.py                                                  | Python         |          5 |         -5 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\supabase\functions\get-download-url\index.ts                            | TypeScript     |          3 |         -3 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\supabase\functions\mobile_logic.ts                                      | TypeScript     |          6 |         -6 |          0 |          0 |
+| c:\mobile system manager\textile-mobile\supabase\functions\validate-license\index.ts                            | TypeScript     |          4 |         -4 |          0 |          0 |
+| Total                                                                                                           |                |     23,427 |       -436 |      2,227 |     25,218 |
++-----------------------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
