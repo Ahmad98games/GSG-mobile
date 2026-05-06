@@ -1,0 +1,41 @@
+// @ts-nocheck
+/**
+ * NOXIS INDUSTRIAL OS - HIGH PERFORMANCE CORE
+ * (c) 2026 Gold She Industrial ERP. All rights reserved.
+ * PROPRIETARY AND CONFIDENTIAL.
+ */
+import {
+  curveBasis,
+  curveBumpX,
+  curveBumpY,
+  curveCardinal,
+  curveCatmullRom,
+  curveLinear,
+  curveMonotoneX,
+  curveNatural,
+  curveStep,
+  curveStepAfter,
+  curveStepBefore,
+} from "d3-shape";
+
+/**
+ * Exposed curves from d3-shape.
+ */
+export const CURVES = {
+  linear: curveLinear,
+  natural: curveNatural,
+  bumpX: curveBumpX,
+  bumpY: curveBumpY,
+  cardinal: curveCardinal,
+  cardinal50: curveCardinal.tension(0.5),
+  catmullRom: curveCatmullRom,
+  catmullRom0: curveCatmullRom.alpha(0),
+  catmullRom100: curveCatmullRom.alpha(1),
+  monotoneX: curveMonotoneX,
+  step: curveStep,
+  stepAfter: curveStepAfter,
+  stepBefore: curveStepBefore,
+  basis: curveBasis,
+} as const;
+export type CurveType = keyof typeof CURVES;
+

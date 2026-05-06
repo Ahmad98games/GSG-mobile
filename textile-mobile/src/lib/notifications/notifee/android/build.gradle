@@ -1,0 +1,88 @@
+buildscript {
+  // The Android Gradle plugin is only required when opening the android folder stand-alone.
+  // This avoids unnecessary downloads and potential conflicts when the library is included as a
+  // module dependency in an application project.
+  if (project == rootProject) {
+    repositories {
+      google()
+      mavenCentral()
+    }
+
+    dependencies {
+      classpath("com.android.tools.build:gradle:7.0.1")
+    }
+  }
+}
+
+plugins {
+  id "io.invertase.gradle.build" version "1.5"
+}
+
+project.evaluationDependsOn(':app')
+
+project.ext {
+  set('react-native', [
+    versions: [
+      android: [
+        minSdk    : 20,
+        targetSdk : 30,
+        compileSdk: 30,
+        // optional as gradle.buildTools comes with one by default
+        // overriding here though to match the version RN uses
+        // buildTools: "29.0.2"
+      ],
+    ],
+  ])
+}
+
+android {
+  defaultConfig {
+    multiDexEnabled true
+  }
+  lintOptions {
+    disable 'GradleCompatible'
+    abortOnError false
+  }
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+  buildTypes {
+    release {
+      consumerProguardFiles 'proguard-rules.pro'
+    }
+  }
+  compileSdkVersion = 30
+  buildToolsVersion = '30.0.2'
+}
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+dependencies {
+  if (findProject(':notifee_core')) {
+    implementation findProject(':notifee_core')
+  } else {
+    implementation(group: 'app.notifee', name:'core', version: '+')
+  }
+  implementation 'androidx.concurrent:concurrent-futures:1.1.0' // Android concurrent futures library
+  implementation 'com.google.android.gms:play-services-tasks:17.2.1' // Google Play Services Task API
+  implementation 'androidx.work:work-runtime:2.5.0' // Android WorkManager library
+  implementation 'org.greenrobot:eventbus:3.2.0' // Industrial Event Bus
+  implementation 'com.squareup.okhttp3:okhttp:3.12.12' // Network Stack
+  
+  // Token Logic
+  api 'io.jsonwebtoken:jjwt-api:0.11.2'
+  runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.2'
+  runtimeOnly('io.jsonwebtoken:jjwt-orgjson:0.11.2') {
+    exclude group: 'org.json', module: 'json' //provided by Android natively
+  }
+}
+
+ReactNative.shared.applyPackageVersion()
+ReactNative.shared.applyDefaultExcludes()
+ReactNative.module.applyAndroidVersions()
+ReactNative.module.applyReactNativeDependency("api")
+apply from: file('./notifee-json.gradle')

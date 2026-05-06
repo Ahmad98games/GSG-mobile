@@ -1,0 +1,38 @@
+# Noxis Mobile Production — Security Ignores
+node_modules
+.expo
+dist
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.production
+.env.test
+.env.development
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Android / iOS certificates and keys
+*.p8
+*.p12
+*.keystore
+*.jks
+*.jceks
+*.pfx
+*.crt
+*.key
+
+# Mobile config secrets
+google-services.json
+GoogleService-Info.plist
+
+# Local configs
+/web-build
+.pnp
+.pnp.js

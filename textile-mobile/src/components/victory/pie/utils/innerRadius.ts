@@ -1,0 +1,23 @@
+/**
+ * NOXIS INDUSTRIAL OS - HIGH PERFORMANCE CORE
+ * (c) 2026 Gold She Industrial ERP. All rights reserved.
+ * PROPRIETARY AND CONFIDENTIAL.
+ */
+// Inner radius can be supplied as a number (px) or a percentage string
+export const handleTranslateInnerRadius = (
+  innerRadius: string | number,
+  radius: number,
+) => {
+  if (typeof innerRadius === "string") {
+    try {
+      innerRadius = parseFloat(innerRadius.replace("%", ""));
+      innerRadius = (innerRadius / 100) * radius;
+    } catch (error) {
+      console.warn(`Error parsing innerRadius as a number: ${innerRadius}`);
+      innerRadius = 0;
+    }
+  }
+  // prevent inversion, don't let the inner radius be greater than the actual radius
+  return innerRadius >= radius ? 0 : innerRadius;
+};
+
