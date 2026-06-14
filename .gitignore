@@ -3,3 +3,6 @@ node_modules/
 .git_backup/
 .expo/
 dist/
+b/
+.next/
+android-GSG/
