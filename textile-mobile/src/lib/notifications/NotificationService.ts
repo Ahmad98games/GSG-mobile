@@ -221,6 +221,142 @@ class NotificationService {
   }
 
   /**
+   * DEAD STOCK ALERT
+   * Suppressible. Warns of non-moving inventory.
+   */
+  public async displayDeadStock(skuCode: string, daysIdle: number): Promise<void> {
+    if (await this.shouldSuppress(false)) return;
+
+    const title = PersonaEngine.t('alert.dead_stock');
+    const body = `${skuCode}: Non-moving for ${daysIdle} days`;
+
+    const id = await notifee.displayNotification({
+      title,
+      body,
+      android: {
+        channelId: CHANNELS.DEAD_STOCK,
+      },
+    });
+
+    await this.logNotification({ 
+      type: 'dead_stock', 
+      title, 
+      body, 
+      notifeeId: id, 
+      payload: { skuCode, daysIdle } 
+    });
+  }
+
+  /**
+   * AUDIT REMINDER
+   * High importance. Compliance check requested.
+   */
+  public async displayAuditReminder(auditId: string, deadline: string): Promise<void> {
+    const title = PersonaEngine.t('alert.audit_reminder');
+    const body = `Audit ${auditId} due by ${deadline}`;
+
+    const id = await notifee.displayNotification({
+      title,
+      body,
+      android: {
+        channelId: CHANNELS.AUDIT_REMINDER,
+        importance: AndroidImportance.HIGH,
+      },
+    });
+
+    await this.logNotification({ 
+      type: 'audit_reminder', 
+      title, 
+      body, 
+      notifeeId: id, 
+      payload: { auditId } 
+    });
+  }
+
+  /**
+   * STAFF ACTION
+   * Operational notification regarding workforce tasks.
+   */
+  public async displayStaffAction(action: string, staffName: string): Promise<void> {
+    if (await this.shouldSuppress(false)) return;
+
+    const title = PersonaEngine.t('alert.staff_action');
+    const body = `${staffName}: ${action}`;
+
+    const id = await notifee.displayNotification({
+      title,
+      body,
+      android: {
+        channelId: CHANNELS.STAFF_ACTION,
+      },
+    });
+
+    await this.logNotification({ 
+      type: 'staff_action', 
+      title, 
+      body, 
+      notifeeId: id, 
+      payload: { staffName } 
+    });
+  }
+
+  /**
+   * INVOICE CREATED
+   * Suppressible. Warns of new invoices.
+   */
+  public async displayInvoiceCreated(invoiceId: string, partyName: string, amount: string): Promise<void> {
+    if (await this.shouldSuppress(false)) return;
+
+    const title = `Invoice Created: #${invoiceId}`;
+    const body = `${partyName} · Amount: ${amount}`;
+
+    const id = await notifee.displayNotification({
+      title,
+      body,
+      android: {
+        channelId: CHANNELS.NOXIS_ALERTS,
+      },
+    });
+
+    await notifee.incrementBadgeCount();
+    await this.logNotification({ 
+      type: 'invoice_created', 
+      title, 
+      body, 
+      notifeeId: id, 
+      payload: { invoiceId, partyName, amount } 
+    });
+  }
+
+  /**
+   * PRODUCTION LOGGED
+   * Suppressible. Logs piece rate entries.
+   */
+  public async displayProductionLogged(workerName: string, qty: number, item: string): Promise<void> {
+    if (await this.shouldSuppress(false)) return;
+
+    const title = `Production Logged`;
+    const body = `${workerName} produced ${qty} ${item}`;
+
+    const id = await notifee.displayNotification({
+      title,
+      body,
+      android: {
+        channelId: CHANNELS.PRODUCTION_ALERT,
+      },
+    });
+
+    await notifee.incrementBadgeCount();
+    await this.logNotification({ 
+      type: 'production_logged', 
+      title, 
+      body, 
+      notifeeId: id, 
+      payload: { workerName, qty, item } 
+    });
+  }
+
+  /**
    * SYSTEM LOCK COMMAND
    * Never suppressed. Launches lock overlay.
    */

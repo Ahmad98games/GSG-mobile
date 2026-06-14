@@ -1,4 +1,54 @@
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll, jest } from '@jest/globals';
+
+jest.mock('react-native-tcp-socket', () => {
+  return require('net');
+});
+
+jest.mock('react-native-quick-crypto', () => {
+  return require('crypto');
+});
+
+jest.mock('@react-native-async-storage/async-storage', () => {
+  return require('@react-native-async-storage/async-storage/jest/async-storage-mock');
+});
+
+jest.mock('expo-sqlite', () => {
+  const mockDb = {
+    execAsync: (jest.fn() as any).mockResolvedValue(undefined),
+    runAsync: (jest.fn() as any).mockResolvedValue({ changes: 1, lastInsertRowId: 1 }),
+    getFirstAsync: (jest.fn() as any).mockImplementation(async (query: any) => {
+      if (query && typeof query === 'string') {
+        if (query.includes('sync_queue')) return { count: 0 };
+        if (query.includes('FROM messages')) return { status: 'sent' };
+        if (query.includes('FROM sku_cache')) return { article_name: 'Cached Item' };
+      }
+      return null;
+    }),
+    getAllAsync: (jest.fn() as any).mockResolvedValue([]),
+  };
+  return {
+    openDatabaseSync: () => mockDb,
+    openDatabaseAsync: async () => mockDb,
+  };
+});
+
+jest.mock('expo-file-system', () => ({
+  documentDirectory: '/tmp/',
+  readAsStringAsync: (jest.fn() as any).mockResolvedValue(''),
+  getInfoAsync: (jest.fn() as any).mockResolvedValue({ exists: false }),
+  deleteAsync: (jest.fn() as any).mockResolvedValue(undefined),
+  EncodingType: { Base64: 'base64' },
+}));
+
+jest.mock('expo-secure-store', () => ({
+  setItemAsync: (jest.fn() as any).mockResolvedValue(undefined),
+  getItemAsync: (jest.fn() as any).mockImplementation(async (key: any) => {
+    if (key === 'gs_mesh_key') return '696e647573747269616c2d6d6573682d6b65792d373434372d736d6f6b65'; // Valid hex string for buffer decode
+    if (key === 'gs_node_id') return 'SMOKE-TEST-NODE';
+    return null;
+  }),
+}));
+
 import { tcpService } from '../../services/TCPClientService';
 import { useBridgeStatus } from '../../store/BridgeStatusStore';
 import { ProtobufService } from '../../services/ProtobufService';

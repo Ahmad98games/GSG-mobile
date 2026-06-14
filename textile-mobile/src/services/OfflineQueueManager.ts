@@ -159,7 +159,7 @@ class OfflineQueueManager extends EventEmitter {
         const { NspService } = require('./NspService');
         await NspService.sendResponse(item.payload);
       } else {
-        const typeMap: Record<number, string> = { 0: 'heartbeat', 1: 'scan', 2: 'sos', 4: 'error', 8: 'telemetry', 11: 'message' };
+        const typeMap: Record<number, string> = { 0: 'heartbeat', 1: 'scan', 2: 'sos', 4: 'error', 5: 'StockDelta', 8: 'telemetry', 11: 'message' };
         await tcpService.sendEvent(typeMap[item.type] || 'scan', {
           ...item.payload,
           idempotency_key: item.uuid
@@ -230,3 +230,7 @@ class OfflineQueueManager extends EventEmitter {
 }
 
 export const queueManager = new OfflineQueueManager();
+
+export async function getPendingCount(): Promise<number> {
+  return queueManager.getQueueCount();
+}

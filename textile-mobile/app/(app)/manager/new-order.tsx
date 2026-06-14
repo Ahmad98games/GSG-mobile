@@ -7,6 +7,9 @@ import { supabase } from '../../../src/lib/supabase';
 import { useAuthStore } from '../../../src/store/AuthStore';
 import { Decimal } from 'decimal.js';
 import { SyncEngine } from '../../../src/lib/SyncEngine';
+import { useTierStore } from '../../../src/stores/TierStore';
+import { useBridgeStatusStore } from '../../../src/store/BridgeStatusStore';
+import { openWhatsApp } from '../../../src/utils/whatsapp';
 
 /**
  * SOVEREIGN MOBILE ORDER INTAKE (v2.0)
@@ -15,6 +18,7 @@ import { SyncEngine } from '../../../src/lib/SyncEngine';
 
 export default function NewOrder() {
   const router = useRouter();
+  const { ownerWhatsApp } = useBridgeStatusStore();
   const { nodeRole } = useAuthStore();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -186,8 +190,18 @@ export default function NewOrder() {
                 <TouchableOpacity 
                     style={[styles.syncBtn, { backgroundColor: '#25D366', marginTop: 12 }]}
                     onPress={() => {
-                        const msg = `Order Confirmed: ${party.name}. Total: Rs. 139,650.`;
-                        Linking.openURL(`whatsapp://send?text=${encodeURIComponent(msg)}`);
+                        if (!useTierStore.getState().hasFeature('whatsappAutoAlerts')) {
+                            Alert.alert(
+                                'Pro Feature',
+                                'Automatic WhatsApp alerts require Pro plan.',
+                                [{ text: 'OK' }]
+                            );
+                            return;
+                        }
+                        const BRAND_FOOTER = '\n\n─────────────────\n🔒 Noxis Hub | Omnora Labs\nnoxishub.app';
+                        const msg = `Order Confirmed: ${party?.name || 'Customer'}. Total: Rs. 139,650.` + BRAND_FOOTER;
+                        const targetPhone = party?.phone || ownerWhatsApp;
+                        openWhatsApp(targetPhone, msg);
                     }}
                 >
                     <Ionicons name="logo-whatsapp" size={20} color="white" />

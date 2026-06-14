@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { Stack } from 'expo-router';
 import { THEME } from '../../src/constants/theme';
 import { Zap, RefreshCcw, Lock, Palette, ChevronUp, Power, ShieldAlert, Cpu, Crown, LockKeyhole } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useAuthStore } from '../../src/store/AuthStore';
+import { useBridgeStatus } from '../../src/store/BridgeStatusStore';
 import * as Haptics from 'expo-haptics';
 import { FeatureLock } from '../../src/components/tier/FeatureLock';
 
@@ -12,6 +14,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 export default function CommandScreen() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { nodeTier, isDeviceApproved } = useAuthStore();
+  const { advanceTerm } = useBridgeStatus();
   const drawerY = useSharedValue(SCREEN_HEIGHT);
   
   const isElite = nodeTier === 'ELITE' && isDeviceApproved;
@@ -45,6 +48,12 @@ export default function CommandScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ 
+        title: 'Command Center', 
+        headerStyle: { backgroundColor: THEME.colors.bg }, 
+        headerTintColor: 'white',
+        headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
+      }} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>COMMAND_CENTER</Text>
@@ -78,6 +87,18 @@ export default function CommandScreen() {
             color={THEME.colors.gold} 
             onPress={() => console.log('Switching theme...')}
           />
+          <QuickAction 
+            icon={Zap} 
+            label={`${advanceTerm.toUpperCase()}_ENTRY`} 
+            color={THEME.colors.blue} 
+            onPress={() => require('expo-router').router.push('/(app)/karigars/peshgi')}
+          />
+          <QuickAction 
+            icon={Zap} 
+            label="CREATE_INVOICE" 
+            color={THEME.colors.gold} 
+            onPress={() => require('expo-router').router.push('/(app)/invoices/new')}
+          />
           <FeatureLock feature="systemLock" requiredTier="elite">
             <QuickAction 
               icon={ShieldAlert} 
@@ -87,6 +108,7 @@ export default function CommandScreen() {
             />
           </FeatureLock>
         </View>
+
 
         <View style={styles.infoBox}>
           <Cpu size={16} color={THEME.colors.textSecondary} />

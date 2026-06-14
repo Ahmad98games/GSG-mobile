@@ -1,0 +1,17 @@
+# EAS Build Ignore Config
+node_modules/
+.expo/
+dist/
+android/app/build/
+android/app/.cxx/
+android/.gradle/
+android/build/
+b/
+ios/build/
+.next/
+*.db
+*.db-wal
+*.db-shm
+build_error.txt
+build_error_utf8.txt
+smoke-results.xml

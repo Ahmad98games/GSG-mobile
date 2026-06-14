@@ -1,4 +1,5 @@
 import { useProfileStore, type IndustryProfile } from '../store/ProfileStore';
+import { useBridgeStatus } from '../store/BridgeStatusStore';
 
 interface UIManifest {
   visibleModules: string[];
@@ -46,6 +47,36 @@ const FALLBACK_MANIFESTS: Record<IndustryProfile, UIManifest> = {
       secondary_action: 'VIEW_STOCK'
     },
     barcodeRegex: '^.{1,64}$'
+  },
+  AGRICULTURE: {
+    visibleModules: ['Scans', 'Stock', 'Messages', 'YieldTracking'],
+    labels: { 
+      unit: 'Bag', 
+      bulk: 'Trolley',
+      primary_action: 'LOG_HARVEST',
+      secondary_action: 'CHECK_STOCK'
+    },
+    barcodeRegex: '^.{1,64}$'
+  },
+  WHOLESALE: {
+    visibleModules: ['Scans', 'Stock', 'Messages', 'Cashflow'],
+    labels: { 
+      unit: 'Item', 
+      bulk: 'Carton',
+      primary_action: 'CREATE_INVOICE',
+      secondary_action: 'VIEW_LEDGER'
+    },
+    barcodeRegex: '^.{1,64}$'
+  },
+  RICE_MILL: {
+    visibleModules: ['Scans', 'Stock', 'Messages', 'Production'],
+    labels: { 
+      unit: 'Munn', 
+      bulk: 'Bora',
+      primary_action: 'LOG_MILLING',
+      secondary_action: 'AUDIT_STOCK'
+    },
+    barcodeRegex: '^.{1,64}$'
   }
 };
 
@@ -55,8 +86,15 @@ const FALLBACK_MANIFESTS: Record<IndustryProfile, UIManifest> = {
  */
 export function useUIManifest() {
   const { activeProfile, uiManifest } = useProfileStore();
+  const { workerTerm } = useBridgeStatus();
 
-  const manifest = uiManifest || FALLBACK_MANIFESTS[activeProfile];
+  const baseManifest = uiManifest || FALLBACK_MANIFESTS[activeProfile];
+  
+  // Dynamically map module names based on persona
+  const manifest = {
+    ...baseManifest,
+    visibleModules: baseManifest.visibleModules.map((m: string) => m === 'Karigar' ? workerTerm : m)
+  };
 
   return {
     moduleVisible: (moduleName: string) => manifest.visibleModules.includes(moduleName),
@@ -68,3 +106,4 @@ export function useUIManifest() {
     activeProfile
   };
 }
+

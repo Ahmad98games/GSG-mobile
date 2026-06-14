@@ -4,6 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { tcpService } from '../../../src/services/TCPClientService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
+import { formatCurrency } from '../../../src/lib/currency/formatCurrency';
 
 export default function StockScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -99,7 +100,7 @@ export default function StockScannerScreen() {
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Sale Price</Text>
-                  <Text style={styles.detailValue}>Rs. {result.sale_price}</Text>
+                  <Text style={styles.detailValue}>{formatCurrency(result.sale_price)}</Text>
                 </View>
               </View>
 

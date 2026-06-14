@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { StyleSheet, View, Text, FlatList, TouchableOpacity, Share } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../src/lib/supabase';
 import * as Print from 'expo-print';
+import { PartyActions } from '@/components/ui/PartyActions';
 
 const GOLD = '#C6A756';
 const RED = '#C44B4B';
@@ -15,6 +16,7 @@ const CARD = '#111111';
 export default function KhataDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const navigation = useNavigation();
 
   const { data: party, isLoading: partyLoading } = useQuery({
     queryKey: ['party', id],
@@ -24,6 +26,20 @@ export default function KhataDetail() {
       return data;
     },
   });
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: party?.name || 'Khata Detail',
+      headerStyle: {
+        backgroundColor: '#0A0C0F',
+      },
+      headerTintColor: '#FFFFFF',
+      headerTitleStyle: {
+        fontWeight: '600',
+        fontSize: 15,
+      },
+    });
+  }, [party?.name]);
 
   const { data: transactions, isLoading: txLoading } = useQuery({
     queryKey: ['transactions', id],
@@ -109,6 +125,12 @@ export default function KhataDetail() {
         <Text style={[styles.heroBalance, { color: party?.balance >= 0 ? GOLD : RED }]}>
           Rs. {Math.abs(party?.balance || 0).toLocaleString()}
         </Text>
+        <PartyActions
+          name={party?.name || ''}
+          phone={party?.phone || ''}
+          balance={Math.abs(party?.balance || 0)}
+          type={party?.type as 'customer' | 'supplier'}
+        />
         <TouchableOpacity style={styles.invoiceBtn}>
           <Text style={styles.invoiceText}>NEW INVOICE</Text>
         </TouchableOpacity>

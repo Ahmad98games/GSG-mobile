@@ -10,7 +10,7 @@ const schemaJson = {
     omnora: {
       nested: {
         Packet: {
-          oneofs: { event: { oneof: ["scan", "heartbeat", "sos", "error", "telemetry", "khata", "stock", "message", "ack", "handshake", "nsp"] } },
+          oneofs: { event: { oneof: ["scan", "heartbeat", "sos", "error", "telemetry", "khata", "stock", "message", "ack", "handshake", "nsp", "typing", "fetchPending", "profileManifest"] } },
           fields: {
             packetId: { type: "string", id: 1 },
             nodeId: { type: "string", id: 2 },
@@ -24,7 +24,9 @@ const schemaJson = {
             stock: { type: "StockDelta", id: 10 },
             message: { type: "TacticalMessage", id: 11 },
             ack: { type: "HubAck", id: 12 },
-            handshake: { type: "HandshakeEvent", id: 13 },
+            typing: { type: "TypingEvent", id: 13 },
+            fetchPending: { type: "FetchPendingMessagesRequest", id: 14 },
+            profileManifest: { type: "ProfileManifest", id: 15 },
             nsp: { type: "NspEnvelope", id: 16 }
           }
         },
@@ -79,6 +81,97 @@ const schemaJson = {
             syncOffsetMs: { type: "int32", id: 3 },
             timestamp: { type: "int64", id: 4 },
             active_branch_id: { type: "string", id: 8 }
+          }
+        },
+        TacticalMessage: {
+          fields: {
+            messageId: { type: "string", id: 1 },
+            fromNodeId: { type: "string", id: 2 },
+            toNodeId: { type: "string", id: 3 },
+            content: { type: "string", id: 4 },
+            mediaType: { type: "string", id: 5 },
+            timestamp: { type: "int64", id: 6 },
+            isEncrypted: { type: "bool", id: 7 },
+            encryptedPayload: { type: "bytes", id: 8 }
+          }
+        },
+        TypingEvent: {
+          fields: {
+            fromNodeId: { type: "string", id: 1 },
+            toNodeId: { type: "string", id: 2 },
+            timestamp: { type: "int64", id: 3 }
+          }
+        },
+        FetchPendingMessagesRequest: {
+          fields: {
+            nodeId: { type: "string", id: 1 },
+            lastReceivedAt: { type: "int64", id: 2 }
+          }
+        },
+        ProfileManifest: {
+          fields: {
+            activeProfile: { type: "string", id: 1 },
+            visibleModules: { rule: "repeated", type: "string", id: 2 }
+          }
+        },
+        HeartbeatEvent: {
+          fields: {
+            nodeId: { type: "string", id: 1 },
+            timestamp: { type: "int64", id: 2 },
+            batteryPercent: { type: "int32", id: 3 },
+            signalStrength: { type: "int32", id: 4 },
+            queueDepth: { type: "int32", id: 5 }
+          }
+        },
+        SOSEvent: {
+          fields: {
+            nodeId: { type: "string", id: 1 },
+            workerId: { type: "string", id: 2 },
+            timestamp: { type: "int64", id: 3 },
+            message: { type: "string", id: 4 },
+            location: { type: "string", id: 5 }
+          }
+        },
+        ErrorEvent: {
+          fields: {
+            nodeId: { type: "string", id: 1 },
+            timestamp: { type: "int64", id: 2 },
+            errorCode: { type: "string", id: 3 },
+            errorMessage: { type: "string", id: 4 },
+            context: { type: "string", id: 5 }
+          }
+        },
+        TelemetryEvent: {
+          fields: {
+            nodeId: { type: "string", id: 1 },
+            timestamp: { type: "int64", id: 2 },
+            batteryTemp: { type: "float", id: 3 },
+            memUsage: { type: "int64", id: 4 },
+            encLatencyMs: { type: "int32", id: 5 },
+            packetSizeBytes: { type: "int32", id: 6 }
+          }
+        },
+        KhataEntry: {
+          fields: {
+            entryId: { type: "string", id: 1 },
+            nodeId: { type: "string", id: 2 },
+            workerId: { type: "string", id: 3 },
+            debitAccount: { type: "string", id: 4 },
+            creditAccount: { type: "string", id: 5 },
+            amountPkr: { type: "int64", id: 6 },
+            timestamp: { type: "int64", id: 7 },
+            syncStatus: { type: "string", id: 8 }
+          }
+        },
+        StockDelta: {
+          fields: {
+            deltaId: { type: "string", id: 1 },
+            nodeId: { type: "string", id: 2 },
+            operationType: { type: "string", id: 3 },
+            batchId: { type: "string", id: 4 },
+            qty: { type: "int32", id: 5 },
+            timestamp: { type: "int64", id: 6 },
+            vectorClock: { type: "string", id: 7 }
           }
         }
       }

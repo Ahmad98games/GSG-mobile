@@ -1,6 +1,6 @@
 import { tcpService } from './TCPClientService';
 import { useBranchStore } from '../store/BranchStore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 import * as SecureStore from 'expo-secure-store';
 
 /**
@@ -12,7 +12,7 @@ export class BranchService {
    * Fetches the list of branches authorized for this node/user.
    */
   public static async fetchBranches() {
-    const nodeId = await AsyncStorage.getItem('gs_node_id');
+    const nodeId = await getSafeStorage('gs_node_id');
     const response = await tcpService.request({
       nsp: {
         branch_list_req: {
@@ -33,7 +33,7 @@ export class BranchService {
    * On success, updates the local JWT/Session for scoped data isolation.
    */
   public static async switchBranch(branchId: string, pin: string) {
-    const nodeId = await AsyncStorage.getItem('gs_node_id');
+    const nodeId = await getSafeStorage('gs_node_id');
     const response = await tcpService.request({
       nsp: {
         switch_branch_req: {

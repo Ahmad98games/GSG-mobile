@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../src/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../../../src/utils/storage';
+import { formatCurrency } from '../../../src/lib/currency/formatCurrency';
 
 /**
  * SOVEREIGN DISPATCH HUB (v2.0)
@@ -18,7 +20,7 @@ const DispatchOrderCard = ({ item, router }: { item: any, router: any }) => {
   useFocusEffect(
     React.useCallback(() => {
       const checkProgress = async () => {
-        const saved = await AsyncStorage.getItem(`dispatch_progress_${item.id}`);
+        const saved = await getSafeStorage(`dispatch_progress_${item.id}`);
         setHasProgress(!!saved);
       };
       checkProgress();
@@ -47,7 +49,7 @@ const DispatchOrderCard = ({ item, router }: { item: any, router: any }) => {
       <View style={styles.cardFooter}>
         <View style={styles.stat}>
           <Text style={styles.statLabel}>TOTAL VALUE</Text>
-          <Text style={styles.statValue}>Rs. {item.total.toLocaleString()}</Text>
+          <Text style={styles.statValue}>{formatCurrency(item.total)}</Text>
         </View>
         <View style={styles.pickIndicator}>
           <Text style={styles.pickText}>CONTINUE PICKING</Text>

@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useNavigation } from 'expo-router';
 import { FlashList } from '@shopify/flash-list';
 import { THEME, COMMON_STYLES } from '../../../src/constants/DesignSystem';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../src/lib/supabase';
 import { format } from 'date-fns';
+import { useLocalSearchParams } from 'expo-router';
 
 /**
  * SOVEREIGN SCAN HISTORY (v2.0)
@@ -15,7 +17,23 @@ import { format } from 'date-fns';
 type ScanType = 'ALL' | 'ARTICLE' | 'BATCH' | 'JOB';
 
 export default function ScanHistory() {
+  const navigation = useNavigation();
   const [filter, setFilter] = useState<ScanType>('ALL');
+  const { code } = useLocalSearchParams<{ code?: string }>();
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: 'Scan History',
+      headerStyle: {
+        backgroundColor: '#0A0C0F',
+      },
+      headerTintColor: '#FFFFFF',
+      headerTitleStyle: {
+        fontWeight: '600',
+        fontSize: 15,
+      },
+    });
+  }, []);
 
   const { data: scans = [], isLoading } = useQuery({
     queryKey: ['scan-history'],
@@ -29,9 +47,11 @@ export default function ScanHistory() {
     }
   });
 
-  const filteredScans = filter === 'ALL' 
-    ? scans 
-    : scans.filter((s: any) => s.scan_type === filter);
+  const filteredScans = scans.filter((s: any) => {
+    const typeMatch = filter === 'ALL' || s.scan_type === filter;
+    const codeMatch = !code || s.code === code;
+    return typeMatch && codeMatch;
+  });
 
   const FilterChip = ({ type, label }: { type: ScanType, label: string }) => (
     <TouchableOpacity 

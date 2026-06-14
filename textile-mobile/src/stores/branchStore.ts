@@ -4,6 +4,7 @@ import { NspService } from '../services/NspService';
 import { openMeshDb } from '../lib/db/meshDb';
 import { useFinanceStore } from '../store/FinanceStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 
 export interface Branch {
   id: string;
@@ -37,7 +38,7 @@ export const useBranchStore = create<BranchState>((set, get) => ({
     set({ isSwitching: true });
 
     // 2. Require PIN escalation (UI should have verified this or set pin_verified)
-    const isVerified = await AsyncStorage.getItem('pin_verified') === 'true'; 
+    const isVerified = await getSafeStorage('pin_verified') === 'true'; 
     if (!isVerified) {
       set({ isSwitching: false });
       console.warn('[BranchStore] Switch rejected: PIN not verified');

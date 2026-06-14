@@ -7,6 +7,7 @@ import { usePersona } from '../../../src/hooks/usePersona';
 import { FinanceDataService } from '../../../src/services/FinanceDataService';
 import { useFinanceStore } from '../../../src/store/FinanceStore';
 import { BridgeStatusBar } from '../../../src/components/shell/BridgeStatusBar';
+import { MobileFeatureGate } from '../../../src/components/MobileFeatureGate';
 
 /**
  * FINANCE HUB
@@ -56,55 +57,57 @@ export default function FinanceHub() {
   const formattedTotal = React.useMemo(() => fmt(totalReceivables), [totalReceivables, fmt]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: t('FINANCE_HUB'), 
-          headerStyle: { backgroundColor: THEME.colors.bg }, 
-          headerTintColor: 'white',
-          headerTitleStyle: { fontWeight: '900' }
-        }} 
-      />
-      <BridgeStatusBar />
-      
-      <FlatList
-        data={menuItems}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor={THEME.colors.gold} />
-        }
-        ListHeaderComponent={() => (
-          <View style={styles.header}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>{t('TOTAL_RECEIVABLES')}</Text>
-              <Text style={styles.summaryValue}>{formattedTotal}</Text>
-              <View style={styles.cardFooter}>
-                <Ionicons name="shield-checkmark" size={12} color={THEME.colors.gold} />
-                <Text style={styles.footerText}>VERIFIED BY HUB AUDIT</Text>
+    <MobileFeatureGate feature="finance">
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen 
+          options={{ 
+            title: t('FINANCE_HUB'), 
+            headerStyle: { backgroundColor: THEME.colors.bg }, 
+            headerTintColor: 'white',
+            headerTitleStyle: { fontWeight: '900' }
+          }} 
+        />
+        <BridgeStatusBar />
+        
+        <FlatList
+          data={menuItems}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={refreshData} tintColor={THEME.colors.gold} />
+          }
+          ListHeaderComponent={() => (
+            <View style={styles.header}>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>{t('TOTAL_RECEIVABLES')}</Text>
+                <Text style={styles.summaryValue}>{formattedTotal}</Text>
+                <View style={styles.cardFooter}>
+                  <Ionicons name="shield-checkmark" size={12} color={THEME.colors.gold} />
+                  <Text style={styles.footerText}>VERIFIED BY HUB AUDIT</Text>
+                </View>
               </View>
+              <Text style={styles.sectionTitle}>{t('FINANCE_CATEGORIES')}</Text>
             </View>
-            <Text style={styles.sectionTitle}>{t('FINANCE_CATEGORIES')}</Text>
-          </View>
-        )}
-        renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.menuItem} 
-            onPress={() => router.push(item.path as any)}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.iconBox, { backgroundColor: THEME.colors.gold + '15' }]}>
-              <Ionicons name={item.icon as any} size={24} color={THEME.colors.gold} />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.menuSub}>{t(`DESC_${item.id.toUpperCase()}`)}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#4B5563" />
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.list}
-      />
-    </SafeAreaView>
+          )}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => router.push(item.path as any)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.iconBox, { backgroundColor: THEME.colors.gold + '15' }]}>
+                <Ionicons name={item.icon as any} size={24} color={THEME.colors.gold} />
+              </View>
+              <View style={styles.menuContent}>
+                <Text style={styles.menuTitle}>{item.title}</Text>
+                <Text style={styles.menuSub}>{t(`DESC_${item.id.toUpperCase()}`)}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#4B5563" />
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={styles.list}
+        />
+      </SafeAreaView>
+    </MobileFeatureGate>
   );
 }
 

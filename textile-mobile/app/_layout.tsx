@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Slot, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 // @ts-ignore
 // import * as Sentry from '@sentry/react-native';
@@ -13,7 +13,8 @@ const Sentry = {
 import { 
   useFonts, 
   JetBrainsMono_400Regular, 
-  JetBrainsMono_700Bold 
+  JetBrainsMono_700Bold,
+  JetBrainsMono_800ExtraBold
 } from '@expo-google-fonts/jetbrains-mono';
 import { THEME } from '../src/constants/theme';
 import { useAuthStore } from '../src/store/AuthStore';
@@ -25,6 +26,10 @@ import { VoiceFileManager } from '../src/services/VoiceFileManager';
 import { NspService } from '../src/services/NspService';
 import { tcpService } from '../src/services/TCPClientService';
 import notifee, { EventType } from '@notifee/react-native';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // Initialize Sentry for Industrial Forensic Logging
 Sentry.init({
@@ -73,6 +78,7 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     JetBrainsMono_400Regular,
     JetBrainsMono_700Bold,
+    'JetBrainsMono_900Black': JetBrainsMono_800ExtraBold,
   });
 
   const { isAuthenticated, subscriptionActive, isDeviceApproved, nodeTier } = useAuthStore();
@@ -80,12 +86,28 @@ export default function RootLayout() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!fontsLoaded) return;
-    
-    // GUARANTEE COLD BOOT MAINTENACE
-    queueManager.drainPersistedQueue();
-    VoiceFileManager.runCleanup();
-    NspService.initialize();
+    // GUARANTEE COLD BOOT MAINTENANCE
+    try {
+      queueManager.drainPersistedQueue();
+    } catch (e) {
+      console.error('[RootLayout] Queue drain failed:', e);
+    }
+    try {
+      VoiceFileManager.runCleanup();
+    } catch (e) {
+      console.error('[RootLayout] Voice cleanup failed:', e);
+    }
+    try {
+      NspService.initialize();
+    } catch (e) {
+      console.error('[RootLayout] NSP initialization failed:', e);
+    }
+    try {
+      const { createAllChannels } = require('../src/lib/notifications/NotificationChannels');
+      createAllChannels().catch((e: any) => console.error('[RootLayout] Notifee channel creation failed:', e));
+    } catch (e) {
+      console.error('[RootLayout] Notifee channel init failed:', e);
+    }
 
     // Auth Guard logic
     if (!isAuthenticated) {
@@ -136,13 +158,21 @@ export default function RootLayout() {
     };
   }, [fontsLoaded, isAuthenticated, subscriptionActive, isDeviceApproved, nodeTier, pathname]);
 
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded]);
+
   const { activeBreaches, removeBreach } = useAlertStore();
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <IndustrialErrorBoundary>
-      <Slot />
+      <Stack screenOptions={{ headerShown: false }} />
       {activeBreaches.length > 0 && (
         <RedAlertOverlay 
           alerts={activeBreaches} 

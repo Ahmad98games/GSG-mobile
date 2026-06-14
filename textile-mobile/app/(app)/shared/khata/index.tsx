@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { THEME, COMMON_STYLES } from '../../../../src/constants/DesignSystem';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../../src/lib/supabase';
+import { formatCurrency } from '../../../../src/lib/currency/formatCurrency';
 
 /**
  * SOVEREIGN KHATA HOME (v2.0)
@@ -13,6 +14,22 @@ import { supabase } from '../../../../src/lib/supabase';
 
 export default function KhataHome() {
   const router = useRouter();
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: 'Party Ledger',
+      headerStyle: {
+        backgroundColor: '#0A0C0F',
+      },
+      headerTintColor: '#FFFFFF',
+      headerTitleStyle: {
+        fontWeight: '600',
+        fontSize: 15,
+      },
+    });
+  }, []);
+
   const [search, setSearch] = useState('');
   
   const { data: parties, isLoading, refetch } = useQuery({
@@ -61,7 +78,7 @@ export default function KhataHome() {
           styles.balanceValue,
           { color: item.balance >= 0 ? THEME.colors.status.success : THEME.colors.status.danger }
         ]}>
-          Rs. {Math.abs(item.balance).toLocaleString()}
+          {formatCurrency(Math.abs(item.balance))}
           {item.balance < 0 ? ' (DR)' : ' (CR)'}
         </Text>
       </View>

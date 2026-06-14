@@ -18,9 +18,11 @@ import { THEME, COMMON_STYLES } from '../../../src/constants/DesignSystem';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../../src/store/AuthStore';
+import { useBridgeStatusStore } from '../../../src/store/BridgeStatusStore';
 import { supabase } from '../../../src/lib/supabase';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { Linking } from 'react-native';
+import { openWhatsApp } from '../../../src/utils/whatsapp';
 import * as Updates from 'expo-updates';
 
 /**
@@ -32,6 +34,7 @@ const { width } = Dimensions.get('window');
 
 export default function ManagerDashboard() {
   const router = useRouter();
+  const { ownerWhatsApp } = useBridgeStatusStore();
   const nodeRole = useAuthStore(s => s.nodeRole);
   const isFriday = new Date().getDay() === 5;
   const isManager = nodeRole === 'MANAGER_ROVING' || nodeRole === 'ACCOUNTANT';
@@ -102,15 +105,7 @@ export default function ManagerDashboard() {
     }
   });
 
-  const openWhatsApp = (phone: string, msg: string) => {
-    const cleanPhone = phone.replace(/\D/g, '');
-    const finalPhone = cleanPhone.startsWith('92') ? cleanPhone : `92${cleanPhone.replace(/^0/, '')}`;
-    const url = `whatsapp://send?phone=${finalPhone}&text=${encodeURIComponent(msg)}`;
-    Linking.canOpenURL(url).then(supported => {
-        if (supported) Linking.openURL(url);
-        else Linking.openURL(`sms:${finalPhone}?body=${encodeURIComponent(msg)}`);
-    });
-  };
+
 
   const maxVal = Math.max(...(metrics?.weeklyRevenue.map(d => d.value) || [1]));
 

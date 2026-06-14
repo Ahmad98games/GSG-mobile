@@ -2,7 +2,7 @@
   "expo": {
     "name": "Noxis",
     "slug": "noxis",
-    "version": "1.0.0",
+    "version": "13.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -17,16 +17,39 @@
     },
     "android": {
       "package": "com.omnoralabs.noxis",
+      "versionCode": 2,
       "jsEngine": "hermes",
       "newArchEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_WIFI_STATE",
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "POST_NOTIFICATIONS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#121417"
       }
     },
     "extra": {
+      "router": {
+        "origin": false
+      },
       "eas": {
-        "projectId": "55621019-2846-48a0-8bba-8fce5d8bb483"
+        "projectId": "b904c8cc-888d-4682-9568-5cd9be0e42db"
       }
     },
     "plugins": [
@@ -44,7 +67,21 @@
           "microphonePermission": "Allow Noxis to record tactical voice notes"
         }
       ],
-      "expo-sqlite"
-    ]
+      "expo-sqlite",
+      "expo-asset",
+      "expo-splash-screen",
+      "expo-local-authentication",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ]
+    ],
+    "owner": "ahmad9815830"
   }
 }

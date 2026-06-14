@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 
 /**
  * DYNAMIC VOCABULARY SYSTEM
@@ -60,9 +61,9 @@ export const NodeVocabularyProvider: React.FC<{ children: React.ReactNode }> = (
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const raw = await AsyncStorage.getItem('gs_node_config');
-        if (raw) {
-          const config = JSON.parse(raw);
+        const raw = await getSafeStorage('gs_node_config');
+        const config = raw ? JSON.parse(raw) : null;
+        if (config) {
           if (config.industryType) {
             setIndustryType(config.industryType);
           }

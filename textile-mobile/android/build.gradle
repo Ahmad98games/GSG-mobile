@@ -5,10 +5,10 @@ buildscript {
         buildToolsVersion = findProperty('android.buildToolsVersion') ?: '35.0.0'
         minSdkVersion = Integer.parseInt(findProperty('android.minSdkVersion') ?: '24')
         compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '35')
-        targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '34')
+        targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '35')
         kotlinVersion = findProperty('android.kotlinVersion') ?: '1.9.25'
 
-        ndkVersion = "26.1.10909125"
+        ndkVersion = "27.2.12479018"
     }
     repositories {
         google()
@@ -22,7 +22,6 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
-apply plugin: "expo-root-project"
 
 allprojects {
     repositories {
@@ -40,3 +39,31 @@ allprojects {
         maven { url 'https://www.jitpack.io' }
     }
 }
+
+subprojects {
+    // Redirect buildDir to a shorter path only for the "app" project to bypass Windows MAX_PATH (260 character limit) failures,
+    // while keeping library build directories in their default paths to prevent breaking CMake native module linking.
+    if (project.name == "app") {
+        def shortName = project.name
+        project.buildDir = new File("C:\\mobile system manager\\b\\${shortName}")
+        if (project.hasProperty("layout")) {
+            project.layout.buildDirectory.set(new File("C:\\mobile system manager\\b\\${shortName}"))
+        }
+    }
+
+    def setNdk = {
+        if (project.hasProperty('android')) {
+            project.android {
+                ndkVersion = "27.2.12479018"
+            }
+        }
+    }
+    if (project.state.executed) {
+        setNdk()
+    } else {
+        project.afterEvaluate {
+            setNdk()
+        }
+    }
+}
+

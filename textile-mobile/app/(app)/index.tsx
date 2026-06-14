@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Stack } from 'expo-router';
 import { THEME } from '../../src/constants/theme';
 import { useBridgeStatus } from '../../src/store/BridgeStatusStore';
 import { useAuthStore } from '../../src/store/AuthStore';
@@ -31,6 +32,12 @@ export default function HealthScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Stack.Screen options={{ 
+        title: 'System Health', 
+        headerStyle: { backgroundColor: THEME.colors.bg }, 
+        headerTintColor: 'white',
+        headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
+      }} />
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>{companyName.toUpperCase()}</Text>

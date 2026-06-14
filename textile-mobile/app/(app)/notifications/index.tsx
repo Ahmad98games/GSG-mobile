@@ -160,7 +160,7 @@ export default function NotificationHistory() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: t('notifications.history_title'),
+          title: 'Notifications',
           headerStyle: { backgroundColor: THEME.colors.bg },
           headerTintColor: '#fff',
           headerRight: () => (

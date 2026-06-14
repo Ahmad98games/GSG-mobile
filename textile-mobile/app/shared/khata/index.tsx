@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../src/lib/supabase';
 
@@ -14,6 +14,21 @@ const CARD = '#111111';
 export default function KhataList() {
   const [search, setSearch] = useState('');
   const router = useRouter();
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: 'Party Ledger',
+      headerStyle: {
+        backgroundColor: '#0A0C0F',
+      },
+      headerTintColor: '#FFFFFF',
+      headerTitleStyle: {
+        fontWeight: '600',
+        fontSize: 15,
+      },
+    });
+  }, []);
 
   const { data: parties, isLoading } = useQuery({
     queryKey: ['parties'],

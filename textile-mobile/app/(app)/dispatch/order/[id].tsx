@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../../../src/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../../../../src/utils/storage';
 import NetInfo from '@react-native-community/netinfo';
 import { SyncEngine } from '../../../../src/lib/SyncEngine';
 import { useAuthStore } from '../../../../src/store/AuthStore';
@@ -42,9 +43,10 @@ export default function OrderPickList() {
   // Restore Persistence
   useEffect(() => {
     const restore = async () => {
-      const saved = await AsyncStorage.getItem(PROGRESS_KEY);
-      if (saved) {
-        setPickedItems(JSON.parse(saved));
+      const saved = await getSafeStorage(PROGRESS_KEY);
+      const data = saved ? JSON.parse(saved) : null;
+      if (data) {
+        setPickedItems(data);
       }
     };
     restore();

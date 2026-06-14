@@ -1,0 +1,11 @@
+﻿ninja: Entering directory `C:\mobile system manager\textile-mobile\node_modules\react-native-quick-crypto\android\.cxx\Debug\56l3j634\arm64-v8a'
+ninja.exe : ninja: error: 'C:/mobile system manager/textile-mobile/node_modules/react-native-nitro-modules/android/buil
+d/intermediates/cxx/Debug/2j8703x3/obj/arm64-v8a/libNitroModules.so', needed by 
+'../../../../build/intermediates/cxx/Debug/56l3j634/obj/arm64-v8a/libQuickCrypto.so', missing and no known rule to 
+make it
+At line:1 char:1
++ & 'E:\unity 6.2\6000.2.5f1\Editor\Data\PlaybackEngines\AndroidPlayer\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ninja: error: '...rule to make it:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

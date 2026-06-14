@@ -10,6 +10,7 @@ import { Decimal } from 'decimal.js';
 import * as ImagePicker from 'expo-image-picker';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../../../../src/utils/storage';
 import { SyncEngine } from '../../../../src/lib/SyncEngine';
 import { useAuthStore } from '../../../../src/store/AuthStore';
 import { useTranslation } from 'react-i18next';
@@ -32,9 +33,10 @@ export default function JobOrderDetail() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const cached = await AsyncStorage.getItem('chori_guard_settings');
+        const raw = await getSafeStorage('chori_guard_settings');
+        const cached = raw ? JSON.parse(raw) : null;
         if (cached) {
-          const { data, expiry } = JSON.parse(cached);
+          const { data, expiry } = cached;
           if (Date.now() < expiry) {
             applySettings(data);
           }

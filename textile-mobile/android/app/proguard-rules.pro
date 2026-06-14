@@ -12,14 +12,3 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
-
-# Noxis Camouflage - Package Renaming
--repackageclasses 'com.noxis.internal'
--allowaccessmodification
-
--renameviewlayout org.vosk.** com.noxis.audio.**
--renamesourcefileattribute SourceFile
--keepattributes SourceFile,LineNumberTable
-
--keep class org.vosk.** { *; }
--keep class com.googlecode.tesseract.** { *; }

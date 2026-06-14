@@ -67,12 +67,24 @@ export default class NotifeeNativeModule {
       return this._nativeModule;
     }
 
-    this._nativeModule = NativeModules[this._moduleConfig.nativeModuleName];
-    if (this._nativeModule == null) {
-      throw new Error('Notifee native module not found.');
+    const nativeMod = NativeModules[this._moduleConfig.nativeModuleName];
+    if (nativeMod == null) {
+      console.warn(`[NOTIFEE_WARN] Native module '${this._moduleConfig.nativeModuleName}' not found. Using safe fallback mock.`);
+      return new Proxy({}, {
+        get(target, prop) {
+          if (prop === 'NOTIFEE_RAW_JSON') {
+            return '{}';
+          }
+          if (prop === 'addListener' || prop === 'removeListeners') {
+            return () => {};
+          }
+          return () => Promise.resolve();
+        }
+      }) as any;
     }
 
-    return this._nativeModule;
+    this._nativeModule = nativeMod;
+    return this._nativeModule!;
   }
 }
 

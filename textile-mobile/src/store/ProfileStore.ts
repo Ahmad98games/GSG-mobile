@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 
-export type IndustryProfile = 'TEXTILE' | 'PHARMA' | 'LOGISTICS' | 'GENERAL';
+export type IndustryProfile = 'TEXTILE' | 'PHARMA' | 'LOGISTICS' | 'GENERAL' | 'AGRICULTURE' | 'WHOLESALE' | 'RICE_MILL';
 
 interface ProfileState {
   activeProfile: IndustryProfile;
@@ -30,8 +31,8 @@ export const useProfileStore = create<ProfileState>((set) => ({
 
   loadPersistedProfile: async () => {
     try {
-      const profile = await AsyncStorage.getItem('gs_active_profile') as IndustryProfile;
-      if (profile && ['TEXTILE', 'PHARMA', 'LOGISTICS', 'GENERAL'].includes(profile)) {
+      const profile = await getSafeStorage('gs_active_profile') as IndustryProfile;
+      if (profile && ['TEXTILE', 'PHARMA', 'LOGISTICS', 'GENERAL', 'AGRICULTURE', 'WHOLESALE', 'RICE_MILL'].includes(profile)) {
         set({ activeProfile: profile, isProfileLoaded: true });
       } else {
         set({ isProfileLoaded: true });

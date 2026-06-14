@@ -14,7 +14,7 @@ export class ScannerService {
   /**
    * Performs a barcode lookup, checking local cache first.
    */
-  public static async lookupBarcode(barcode: string): Promise<StockLookupResponse | null> {
+  public static async lookupBarcode(barcode: string): Promise<any | null> {
     const db = await openMeshDb();
     
     // 1. Check local SKU cache (5 minute TTL)
@@ -35,7 +35,7 @@ export class ScannerService {
         cost_price: cached.cost_price,
         sale_price: cached.sale_price,
         location: cached.location
-      } as StockLookupResponse;
+      };
     }
 
     // 2. Cache miss or stale: Send NSP request
@@ -74,7 +74,22 @@ export class ScannerService {
         return data;
       }
     } catch (err) {
-      console.warn('[Scanner] Network lookup failed, returning null:', err);
+      console.warn('[Scanner] Network lookup failed, falling back to cache:', err);
+    }
+
+    if (cached) {
+      console.log('[Scanner] Stale/Offline cache hit', { barcode });
+      return {
+        sku_id: cached.sku_id,
+        sku_code: cached.sku_code,
+        name: cached.name,
+        qty_on_hand: cached.qty_on_hand,
+        unit: cached.unit,
+        cost_price: cached.cost_price,
+        sale_price: cached.sale_price,
+        location: cached.location,
+        isOffline: true
+      };
     }
 
     return null;

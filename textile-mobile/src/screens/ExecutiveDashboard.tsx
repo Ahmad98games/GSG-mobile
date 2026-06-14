@@ -21,6 +21,7 @@ import {
 } from 'lucide-react-native';
 import { useProductStore, type Party } from '../store/useProductStore';
 import { TelemetryDashboard } from '../components/charts/TelemetryDashboard';
+import { formatCurrency } from '../lib/currency/formatCurrency';
 import { THEME } from '../constants/DesignSystem';
 import * as Haptics from 'expo-haptics';
 import type { RootStackParamList } from '../lib/types';
@@ -76,7 +77,7 @@ export const ExecutiveDashboard = ({ navigation }: Props) => {
           styles.balanceAmount,
           { color: item.balance >= 0 ? '#10b981' : '#ef4444' }
         ]}>
-          ₹{Math.abs(item.balance).toLocaleString()}
+          {formatCurrency(Math.abs(item.balance))}
         </Text>
         <ChevronRight size={16} color="#52525b" />
       </View>
@@ -113,7 +114,7 @@ export const ExecutiveDashboard = ({ navigation }: Props) => {
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>OUTSTANDING</Text>
-          <Text style={[styles.statValue, { color: '#ef4444' }]}>₹2.4M</Text>
+          <Text style={[styles.statValue, { color: '#ef4444' }]}>{formatCurrency(2400000)}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>NET FLOW</Text>

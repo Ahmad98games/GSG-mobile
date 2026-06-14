@@ -1,5 +1,5 @@
 import { tcpService } from './TCPClientService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 
 /**
  * CCTV DATA SERVICE
@@ -15,7 +15,7 @@ export class CctvDataService {
     sinceTimestamp?: number;
     limit?: number;
   }) {
-    const nodeId = await AsyncStorage.getItem('gs_node_id');
+    const nodeId = await getSafeStorage('gs_node_id');
     const response = await tcpService.request({
       nsp: {
         detection_history_req: {
@@ -35,7 +35,7 @@ export class CctvDataService {
    * Fetches the current status and telemetry of all CCTV nodes.
    */
   public static async fetchCameraStatus() {
-    const nodeId = await AsyncStorage.getItem('gs_node_id');
+    const nodeId = await getSafeStorage('gs_node_id');
     const response = await tcpService.request({
       nsp: {
         camera_status_req: {

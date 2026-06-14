@@ -1,6 +1,6 @@
 import { tcpService } from './TCPClientService';
 import { useFinanceStore } from '../store/FinanceStore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 
 /**
  * OMNORA FINANCIAL DATA SERVICE
@@ -12,7 +12,7 @@ export class FinanceDataService {
    * Helper to get nodeId for requests
    */
   private static async getMetaData() {
-    const nodeId = await AsyncStorage.getItem('gs_node_id');
+    const nodeId = await getSafeStorage('gs_node_id');
     return { nodeId };
   }
 
@@ -98,5 +98,22 @@ export class FinanceDataService {
     });
 
     return response?.nsp?.pay_slip_res || null;
+  }
+
+  /**
+   * Fetches the karigar registry for advances.
+   */
+  public static async fetchKarigars() {
+    const { nodeId } = await this.getMetaData();
+
+    const response = await tcpService.request({
+      nsp: {
+        karigar_list_req: {
+          node_id: nodeId
+        }
+      }
+    });
+
+    return response?.nsp?.karigar_list_res || { karigars: [] };
   }
 }

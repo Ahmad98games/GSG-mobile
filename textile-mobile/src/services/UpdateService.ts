@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system';
 import * as IntentLauncher from 'expo-intent-launcher';
 import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 import { Platform } from 'react-native';
 import RNFS from 'react-native-fs';
 
@@ -23,7 +23,7 @@ class CheckUpdateService {
    */
   public async checkForUpdates(): Promise<VersionInfo | null> {
     try {
-      const hubIp = await AsyncStorage.getItem('gs_hub_ip');
+      const hubIp = await getSafeStorage('gs_hub_ip');
       if (!hubIp) return null;
 
       const response = await fetch(`http://${hubIp}:7447/api/deploy/check-update`);
@@ -60,7 +60,7 @@ class CheckUpdateService {
     if (Platform.OS !== 'android') return;
 
     try {
-      const hubIp = await AsyncStorage.getItem('gs_hub_ip');
+      const hubIp = await getSafeStorage('gs_hub_ip');
       const fullUrl = `http://${hubIp}:7447${apkUrl}`;
       const filePath = `${RNFS.DocumentDirectoryPath}/update.apk`;
 

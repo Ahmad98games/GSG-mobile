@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 import crypto from 'react-native-quick-crypto';
 
 /**
@@ -48,7 +49,7 @@ export class ModelManager {
    * Returns the current download status of a model.
    */
   public static async getStatus(type: ModelType): Promise<ModelStatus> {
-    const status = await AsyncStorage.getItem(`model_status_${type}`);
+    const status = await getSafeStorage(`model_status_${type}`);
     return (status as ModelStatus) || 'not_downloaded';
   }
 

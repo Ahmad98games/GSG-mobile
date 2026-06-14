@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../src/store/AuthStore';
 import { supabase } from '../../../src/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../../../src/utils/storage';
 import { I18nManager } from 'react-native';
 // @ts-ignore
 import * as Updates from 'expo-updates';
@@ -35,7 +36,7 @@ export default function Settings() {
 
   useEffect(() => {
     const loadSettings = async () => {
-      const rtl = await AsyncStorage.getItem('user_rtl');
+      const rtl = await getSafeStorage('user_rtl');
       setIsRTL(rtl === 'true');
       
       if (nodeId) {
@@ -100,7 +101,7 @@ export default function Settings() {
 
   useEffect(() => {
     const loadSettings = async () => {
-      const rtl = await AsyncStorage.getItem('user_rtl');
+      const rtl = await getSafeStorage('user_rtl');
       setIsRTL(rtl === 'true');
     };
     loadSettings();

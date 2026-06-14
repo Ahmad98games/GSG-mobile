@@ -114,8 +114,109 @@ message NspEnvelope {
     CameraStatusRequest camera_status_req = 26;
     CameraStatusResponse camera_status_res = 27;
 
-    // --- FIELDS 28+: RESERVED for Future ---
+    // --- FIELDS 28+: New Mobile Screens ---
+    CashflowSummaryRequest cashflow_req = 28;
+    CashflowSummaryResponse cashflow_res = 29;
+    ShiftHandoverSubmit shift_handover_submit = 30;
+    ShiftHandoverAck shift_handover_ack = 31;
+    AnalyticsSummaryRequest analytics_req = 32;
+    AnalyticsSummaryResponse analytics_res = 33;
+    EfficiencyRankingRequest efficiency_req = 34;
+    EfficiencyRankingResponse efficiency_res = 35;
+    ProductionSummaryRequest production_summary_req = 36;
+    ProductionSummaryResponse production_summary_res = 37;
+    LogProductionRequest log_production_req = 38;
+    LogProductionResponse log_production_res = 39;
   }
+}
+
+message LogProductionRequest {
+  string karigar_id = 1;
+  int32 qty = 2;
+  string grade = 3; // 'A'|'B'|'C'|'R'
+  string department = 4;
+  int64 timestamp = 5;
+}
+
+message LogProductionResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ProductionSummaryRequest {
+  string node_id = 1;
+  string date = 2; // ISO date
+}
+
+message ProductionSummaryResponse {
+  int32 total_units = 1;
+}
+
+message CashflowSummaryRequest {
+  string node_id = 1;
+  int32 days_window = 2; // e.g. 30
+}
+
+message CashflowSummaryResponse {
+  string current_cash = 1;
+  string inflows_30d = 2;
+  string outflows_30d = 3;
+  string net_position = 4;
+  string risk_level = 5; // 'healthy'|'warning'|'critical'
+  string shortfall_date = 6;
+}
+
+message ShiftHandoverSubmit {
+  string shift_id = 1; // 'morning'|'evening'|'night'
+  int32 units_produced = 2;
+  bool machines_down = 3;
+  string machines_note = 4;
+  bool material_shortage = 5;
+  string material_note = 6;
+  bool quality_issues = 7;
+  string quality_note = 8;
+  string next_shift_note = 9;
+  int32 attendance_present = 10;
+  int32 attendance_absent = 11;
+  int32 attendance_overtime = 12;
+  int64 timestamp = 13;
+}
+
+message ShiftHandoverAck {
+  string handover_id = 1;
+  bool success = 2;
+}
+
+message AnalyticsSummaryRequest {
+  string node_id = 1;
+}
+
+message AnalyticsSummaryResponse {
+  string today_revenue = 1;
+  string outstanding_total = 2;
+  int32 active_karigars = 3;
+  int32 low_stock_count = 4;
+  int32 anomaly_count = 5;
+  int64 last_updated = 6;
+}
+
+message EfficiencyRankingRequest {
+  string node_id = 1;
+  string period = 2; // 'week'|'month'|'last_month'
+}
+
+message EfficiencyRankingResponse {
+  repeated KarigarRankItem rankings = 1;
+}
+
+message KarigarRankItem {
+  int32 rank = 1;
+  string karigar_id = 2;
+  string name = 3;
+  string code = 4;
+  int32 units_produced = 5;
+  float quality_score = 6;
+  string efficiency_rate = 7;
 }
 
 message DetectionHistoryRequest {

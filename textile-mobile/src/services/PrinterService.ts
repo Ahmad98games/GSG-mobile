@@ -1,5 +1,7 @@
 import { Alert } from 'react-native';
 import TcpSocket from 'react-native-tcp-socket';
+import { PersonaEngine } from '../lib/persona/PersonaEngine';
+import { useBridgeStatus } from '../store/BridgeStatusStore';
 
 /**
  * ══════════════════════════════════════════════════════════════
@@ -137,6 +139,9 @@ class PrinterService {
    * Print a Khata Receipt
    */
   async printKhataReceipt(party: string, amount: number, type: 'CR' | 'DR'): Promise<void> {
+    const { currency, currencyRegion } = useBridgeStatus.getState();
+    const formattedAmount = PersonaEngine.fmt(amount, currency || 'PKR', currencyRegion || 'south_asian');
+    
     const commands = [
       '\x1B\x40',
       '\x1B\x61\x01',
@@ -145,7 +150,7 @@ class PrinterService {
       '\x1B\x61\x00',
       '--------------------------------\n',
       `PARTY: ${party}\n`,
-      `AMOUNT: Rs. ${amount.toLocaleString()}\n`,
+      `AMOUNT: ${formattedAmount}\n`,
       `TYPE: ${type === 'CR' ? 'CREDIT' : 'DEBIT'}\n`,
       `DATE: ${new Date().toLocaleString()}\n`,
       '--------------------------------\n',

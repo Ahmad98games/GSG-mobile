@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -89,6 +89,7 @@ export default function PairScreen() {
   if (!permission?.granted) {
     return (
       <View style={styles.container}>
+        <Stack.Screen options={{ title: 'Pair with Hub' }} />
         <Text style={styles.title}>CAMERA ACCESS REQUIRED</Text>
         <TouchableOpacity style={styles.btn} onPress={requestPermission}>
           <Text style={styles.btnText}>GRANT PERMISSION</Text>
@@ -99,6 +100,7 @@ export default function PairScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ title: 'Pair with Hub' }} />
       <View style={styles.header}>
         <Text style={styles.brand}>OMNORA / INDUSTRIAL BORDER</Text>
         <Text style={styles.mainTitle}>NODE BONDING</Text>

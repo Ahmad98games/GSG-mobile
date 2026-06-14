@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
 import { tcpService } from './TCPClientService';
 import { queueManager } from './OfflineQueueManager';
 import { Platform } from 'react-native';
@@ -46,7 +47,7 @@ class ErrorLoggingService {
    */
   public async saveError(error: any) {
     try {
-      const nodeId = await AsyncStorage.getItem('gs_node_id');
+      const nodeId = await getSafeStorage('gs_node_id');
       const log: ErrorLog = {
         ts: Date.now(),
         message: error.message || 'Unknown Error',
@@ -66,7 +67,7 @@ class ErrorLoggingService {
 
   private async getPendingLogs(): Promise<ErrorLog[]> {
     try {
-      const data = await AsyncStorage.getItem(this.PENDING_ERRORS_KEY);
+      const data = await getSafeStorage(this.PENDING_ERRORS_KEY);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];

@@ -2,11 +2,24 @@ import { tcpService } from './TCPClientService';
 import { meshBus, MeshEvent } from './MeshEventBus';
 import { SentinelService } from '../lib/notifications/SentinelService';
 import { NoxisGuardianService } from './NoxisGuardianService';
-import { useBridgeStatus } from '../store/BridgeStatusStore';
+import { useBridgeStatus, useBridgeStatusStore } from '../store/BridgeStatusStore';
 import { AppState } from 'react-native';
 import type { AppStateStatus } from 'react-native';
 import { notificationService } from '../lib/notifications/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSafeStorage } from '../utils/storage';
+import { PersonaEngine } from '@/lib/persona/PersonaEngine';
+import { useTierStore } from '../stores/TierStore';
+import { Alert } from 'react-native';
+import { NoxisEvents } from '../utils/events';
+
+const sendMessage = (payload: any) => {
+  tcpService.sendMessage({
+    t: 'NSP_PACKET',
+    nsp: payload,
+    ts: Date.now()
+  });
+};
 
 /**
  * NOXIS SYNAPSE PROTOCOL (NSP) SERVICE
@@ -45,10 +58,11 @@ export class NspService {
   }
 
   private static async checkPendingAcks() {
-    const pending = await AsyncStorage.getItem('pending_breach_ack');
+    const rawPending = await getSafeStorage('pending_breach_ack');
+    const pending = rawPending ? JSON.parse(rawPending) : null;
     if (pending) {
       try {
-        const { notificationId, timestamp } = JSON.parse(pending);
+        const { notificationId, timestamp } = pending;
         console.log(`[NSP] Resuming with pending ACK for ${notificationId}`);
         
         const payload = {
@@ -73,6 +87,129 @@ export class NspService {
    * Routes an incoming NSP envelope to the appropriate handler.
    */
   public static async handleEnvelope(envelope: any) {
+    if (envelope && envelope.type) {
+      const message = envelope;
+      switch (message.type) {
+        case 'HUB_ACK': {
+          const {
+            businessName, industry, industryKey,
+            city, countryCode, currency,
+            tier, maxDevices, isTrialActive,
+            trialDaysRemaining, workerTerm,
+            workerTermPlural, advanceTerm, itemTerm,
+            ownerPhone, canAccessApi,
+          } = message;
+
+          // Update BridgeStatusStore with all hub data
+          useBridgeStatusStore.getState().setStatus({
+            hubOnline: true,
+            syncStatus: 'synced',
+            lastSeen: new Date().toISOString(),
+            businessName: businessName || 'My Factory',
+            industry: industry || 'General',
+            industryKey: industryKey || 'general',
+            city: city || '',
+            countryCode: countryCode || 'PK',
+            currency: currency || 'PKR',
+            tier: (tier || 'lite') as any,
+            maxDevices: maxDevices || 5,
+            isTrialActive: isTrialActive || false,
+            trialDaysRemaining: trialDaysRemaining || null,
+            workerTerm: workerTerm || 'Karigar',
+            workerTermPlural: workerTermPlural || 'Karigars',
+            advanceTerm: advanceTerm || 'Peshgi',
+            itemTerm: itemTerm || 'Item',
+            ownerPhone: ownerPhone || '',
+            ownerWhatsApp: ownerPhone || '',
+            canViewFinance:
+              ['pro','elite'].includes(tier || ''),
+            canViewIntelligence:
+              ['pro','elite'].includes(tier || ''),
+            canAccessApi: canAccessApi !== undefined ? canAccessApi : ['pro', 'elite'].includes(tier || ''),
+          });
+
+          // Persist to AsyncStorage for offline use
+          try {
+            await AsyncStorage.setItem(
+              'noxis_bridge_status',
+              JSON.stringify(
+                useBridgeStatusStore.getState()
+              )
+            );
+          } catch {}
+          break;
+        }
+
+        case 'HEARTBEAT': {
+          // Respond immediately
+          sendMessage({ type: 'HEARTBEAT_RESPONSE',
+            timestamp: Date.now() });
+          useBridgeStatusStore.getState().setStatus({
+            hubOnline: true,
+            lastSeen: new Date().toISOString(),
+          });
+          break;
+        }
+
+        case 'HUB_SYNC': {
+          useBridgeStatusStore.getState().setStatus({
+            syncStatus: 'synced',
+            lastSeen: new Date().toISOString(),
+          });
+          NoxisEvents.emit('HUB_SYNC', message);
+          break;
+        }
+
+        case 'STOCK_UPDATED': {
+          NoxisEvents.emit('STOCK_UPDATED', message);
+          const skuCode = message.sku_code || message.sku;
+          const qtyOnHand = String(message.qty_on_hand || message.quantity || 0);
+          const unit = message.unit || 'pcs';
+          if (message.is_low_stock) {
+            await notificationService.displayLowStock(skuCode, qtyOnHand, unit);
+          }
+          break;
+        }
+
+        case 'INVOICE_CREATED': {
+          NoxisEvents.emit('INVOICE_CREATED', message);
+          const invoiceId = message.invoice_id || message.id || '';
+          const partyName = message.party_name || message.customer || 'Customer';
+          const amount = message.amount || '0.00';
+          await notificationService.displayInvoiceCreated(invoiceId, partyName, amount);
+          break;
+        }
+
+        case 'PRODUCTION_LOGGED': {
+          NoxisEvents.emit('PRODUCTION_LOGGED', message);
+          const workerName = message.worker_name || message.worker || 'Worker';
+          const qty = message.qty || message.quantity || 0;
+          const item = message.item_name || message.item || 'pcs';
+          await notificationService.displayProductionLogged(workerName, qty, item);
+          break;
+        }
+
+        case 'PAIRING_REJECTED': {
+          Alert.alert(
+            'Cannot Connect',
+            message.reason ||
+              'Device limit reached. Upgrade your Noxis plan.',
+            [{ text: 'OK' }]
+          );
+          break;
+        }
+
+        default: {
+          console.warn(
+            '[NSP] Unhandled message type:',
+            message.type
+          );
+          break;
+        }
+      }
+      return;
+    }
+
     if (envelope.sentinel_breach) {
       this.onSentinelBreach(envelope.sentinel_breach);
     } else if (envelope.system_lock) {
@@ -87,7 +224,86 @@ export class NspService {
       this.onPresenceUpdate(envelope.presence_update);
     } else if (envelope.tactical_message) {
       this.onTacticalMessage(envelope.tactical_message);
+    } else if (envelope.cashflow_res) {
+      this.onCashflowResponse(envelope.cashflow_res);
+    } else if (envelope.analytics_res) {
+      this.onAnalyticsResponse(envelope.analytics_res);
+    } else if (envelope.efficiency_res) {
+      this.onEfficiencyRankingResponse(envelope.efficiency_res);
+    } else if (envelope.shift_handover_ack) {
+      this.onShiftHandoverAck(envelope.shift_handover_ack);
+    } else if (envelope.dead_stock_alert) {
+      this.onDeadStockAlert(envelope.dead_stock_alert);
+    } else if (envelope.audit_reminder) {
+      this.onAuditReminder(envelope.audit_reminder);
+    } else if (envelope.staff_action) {
+      this.onStaffAction(envelope.staff_action);
+    } else if (envelope.pairing_rejected) {
+      this.onPairingRejected(envelope.pairing_rejected);
     }
+  }
+
+  private static onCashflowResponse(res: any) {
+    const { useCashflowStore } = require('../store/CashflowStore');
+    useCashflowStore.getState().setCashflowData({
+      currentCash: res.current_cash,
+      inflows30d: res.inflows_30d,
+      outflows30d: res.outflows_30d,
+      netPosition: res.net_position,
+      riskLevel: res.risk_level as any,
+      shortfallDate: res.shortfall_date
+    });
+    meshBus.broadcast(MeshEvent.CASHFLOW_UPDATE, res);
+  }
+
+  private static onAnalyticsResponse(res: any) {
+    const { useAnalyticsStore } = require('../store/AnalyticsStore');
+    useAnalyticsStore.getState().setAnalyticsData({
+      todayRevenue: res.today_revenue,
+      outstandingTotal: res.outstanding_total,
+      activeKarigars: res.active_karigars,
+      lowStockCount: res.low_stock_count,
+      anomalyCount: res.anomaly_count,
+      lastUpdated: res.last_updated
+    });
+    meshBus.broadcast(MeshEvent.ANALYTICS_UPDATE, res);
+  }
+
+  private static onEfficiencyRankingResponse(res: any) {
+    const { useLeaderboardStore } = require('../store/LeaderboardStore');
+    useLeaderboardStore.getState().setRankings(res.rankings.map((r: any) => ({
+      rank: r.rank,
+      karigarId: r.karigar_id,
+      name: r.name,
+      code: r.code,
+      unitsProduced: r.units_produced,
+      qualityScore: r.quality_score,
+      efficiencyRate: r.efficiency_rate
+    })));
+    meshBus.broadcast(MeshEvent.LEADERBOARD_UPDATE, res);
+  }
+
+  private static onShiftHandoverAck(ack: any) {
+    console.log(`[NSP / HANDOVER] ACK: ${ack.handover_id} SUCCESS: ${ack.success}`);
+    meshBus.broadcast(MeshEvent.SHIFT_HANDOVER_ACK, ack);
+  }
+  
+  private static onDeadStockAlert(event: any) {
+    console.log(`[NSP / STOCK] DEAD_STOCK detected for ${event.sku_code}`);
+    notificationService.displayDeadStock(event.sku_code, event.days_idle);
+    meshBus.broadcast(MeshEvent.DEAD_STOCK_ALERT, event);
+  }
+
+  private static onAuditReminder(event: any) {
+    console.log(`[NSP / AUDIT] REMINDER for Audit ${event.audit_id}`);
+    notificationService.displayAuditReminder(event.audit_id, event.deadline);
+    meshBus.broadcast(MeshEvent.AUDIT_REMINDER, event);
+  }
+
+  private static onStaffAction(event: any) {
+    console.log(`[NSP / STAFF] ACTION: ${event.action} by ${event.staff_name}`);
+    notificationService.displayStaffAction(event.action, event.staff_name);
+    meshBus.broadcast(MeshEvent.STAFF_ACTION, event);
   }
 
   /**
@@ -98,6 +314,21 @@ export class NspService {
     
     const bridgeStore = useBridgeStatus.getState();
     bridgeStore.setTierFromHubAck(ack);
+
+    // Sync Mobile TierStore
+    if (ack.tier) {
+      useTierStore.getState().setTierFromHub({
+        tier: ack.tier,
+        expiresAt: ack.expires_at || '',
+        limits: ack.limits || {},
+      });
+    }
+
+    // Sync PersonaEngine with latest Hub defaults
+    PersonaEngine.updateManifest({
+      currency: ack.currency || bridgeStore.currency,
+      region: ack.region || bridgeStore.currencyRegion
+    });
 
     // Flow 4: Handle branch switch confirmation
     if (ack.active_branch_id) {
@@ -192,6 +423,19 @@ export class NspService {
     }
 
     meshBus.broadcast(MeshEvent.TACTICAL_MESSAGE, event);
+  }
+
+  private static onPairingRejected(event: any) {
+    console.warn(`[NSP / PAIRING] REJECTED: ${event.reason}`);
+    
+    Alert.alert(
+      'Connection Rejected',
+      `Cannot connect — Hub device limit reached.\n\nYour Hub is on ${event.tier.toUpperCase()} plan which allows ${event.limit} mobile devices.\n\nPlease contact support to upgrade.`,
+      [{ text: 'OK' }]
+    );
+    
+    const status = useBridgeStatus.getState();
+    status.setConnectionState('offline');
   }
 
   /**

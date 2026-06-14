@@ -8,24 +8,68 @@ import { Platform } from 'react-native';
 export const CHANNELS = {
   SENTINEL_BREACH: 'sentinel_breach',
   LOW_STOCK: 'low_stock',
+  DEAD_STOCK: 'dead_stock',
+  AUDIT_REMINDER: 'audit_reminder',
+  STAFF_ACTION: 'staff_action',
   PAYMENT_RECEIVED: 'payment_received',
   TACTICAL_MESSAGE: 'tactical_message',
   SYSTEM_LOCK: 'system_lock',
   HEARTBEAT_ALERT: 'heartbeat_alert',
+  NOXIS_ALERTS: 'noxis_alerts',
+  PAYMENT_DUE: 'payment_due',
+  PRODUCTION_ALERT: 'production_alert',
 } as const;
 
 /**
- * REGISTER NOTIFICATION CHANNELS
- * Configures Android channels for industrial alerts.
- * Custom sounds must exist in android/app/src/main/res/raw/
+ * CREATE ALL CHANNELS
+ * Creates the required channels on Android for Noxis.
  */
-export async function registerChannels() {
+export async function createAllChannels() {
   if (Platform.OS !== 'android') return;
 
-  const existingChannels = await notifee.getChannels();
-  const existingIds = existingChannels.map(c => c.id);
-
   const channelsToCreate = [
+    {
+      id: CHANNELS.NOXIS_ALERTS,
+      name: 'Noxis Alerts',
+      importance: AndroidImportance.HIGH,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: CHANNELS.LOW_STOCK,
+      name: 'Stock Alerts',
+      importance: AndroidImportance.DEFAULT,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: CHANNELS.PAYMENT_DUE,
+      name: 'Payment Reminders',
+      importance: AndroidImportance.DEFAULT,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: CHANNELS.PRODUCTION_ALERT,
+      name: 'Production Alerts',
+      importance: AndroidImportance.HIGH,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: CHANNELS.AUDIT_REMINDER,
+      name: 'Compliance Reminders',
+      importance: AndroidImportance.HIGH,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: CHANNELS.STAFF_ACTION,
+      name: 'Staff Operations',
+      importance: AndroidImportance.DEFAULT,
+      vibration: true,
+      badge: true,
+    },
     {
       id: CHANNELS.SENTINEL_BREACH,
       name: 'Security Alerts',
@@ -38,8 +82,8 @@ export async function registerChannels() {
       badge: true,
     },
     {
-      id: CHANNELS.LOW_STOCK,
-      name: 'Stock Alerts',
+      id: CHANNELS.DEAD_STOCK,
+      name: 'Inventory Hygiene',
       importance: AndroidImportance.DEFAULT,
       vibration: true,
       badge: true,
@@ -75,10 +119,16 @@ export async function registerChannels() {
     },
   ];
 
-  // Only create if missing to avoid unnecessary overhead
   for (const channel of channelsToCreate) {
-    if (!existingIds.includes(channel.id)) {
-      await notifee.createChannel(channel);
-    }
+    await notifee.createChannel(channel);
   }
 }
+
+/**
+ * REGISTER NOTIFICATION CHANNELS
+ * Compatibility wrapper calling createAllChannels.
+ */
+export async function registerChannels() {
+  await createAllChannels();
+}
+

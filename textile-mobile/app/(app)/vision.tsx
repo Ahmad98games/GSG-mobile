@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
+import { Stack } from 'expo-router';
 import { THEME } from '../../src/constants/theme';
 import { useVisionStore } from '../../src/store/VisionStore';
 import { Eye, AlertTriangle, Activity, Camera } from 'lucide-react-native';
@@ -41,6 +42,12 @@ export default function VisionScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ 
+        title: 'Vision Feed', 
+        headerStyle: { backgroundColor: THEME.colors.bg }, 
+        headerTintColor: 'white',
+        headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
+      }} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>VISION_SENTINEL</Text>

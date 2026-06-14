@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { THEME } from '../constants/theme';
 
 interface Transaction {
   id: string;
@@ -73,7 +74,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 24, marginTop: 16 },
   stat: {},
   statLabel: { color: '#3f3f46', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  statValue: { color: '#D4AF37', fontSize: 12, fontWeight: 'bold', marginTop: 2 },
+  statValue: { color: '#D4AF37', fontSize: 12, fontWeight: 'bold', marginTop: 2, fontFamily: THEME.fonts.monoBold },
   
   historyScroll: { flex: 1, marginTop: 20 },
   historyItem: { 
@@ -93,6 +94,6 @@ const styles = StyleSheet.create({
   typeText: { fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   textIn: { color: '#10b981' },
   textOut: { color: '#ef4444' },
-  historyQty: { color: '#fff', fontSize: 12, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  historyQty: { color: '#fff', fontSize: 12, fontWeight: '900', fontVariant: ['tabular-nums'], fontFamily: THEME.fonts.monoBold },
   historyDate: { color: '#3f3f46', fontSize: 9, fontWeight: 'bold' },
 });

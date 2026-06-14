@@ -23,6 +23,33 @@ export async function openMeshDb(): Promise<SQLite.SQLiteDatabase> {
 
   // PERFORMANCE INDEXES
   await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id TEXT PRIMARY KEY,
+      peer_node_id TEXT NOT NULL,
+      peer_display_name TEXT,
+      last_message_preview TEXT,
+      last_message_at INTEGER,
+      unread_count INTEGER DEFAULT 0,
+      is_muted BOOLEAN DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      from_node_id TEXT NOT NULL,
+      to_node_id TEXT NOT NULL,
+      message_type TEXT NOT NULL CHECK (message_type IN ('text','voice','image','system')),
+      encrypted_payload BLOB NOT NULL,
+      local_path TEXT,
+      status TEXT DEFAULT 'queued',
+      sent_at INTEGER NOT NULL,
+      delivered_at INTEGER,
+      read_at INTEGER,
+      char_count INTEGER,
+      duration_ms INTEGER,
+      is_deleted BOOLEAN DEFAULT 0
+    );
+
     CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, sent_at DESC);
     CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status) WHERE status='queued';
     CREATE INDEX IF NOT EXISTS idx_conv_last ON conversations(last_message_at DESC);

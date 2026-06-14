@@ -1,9 +1,4 @@
-/**
- * NOXIS CORE INDUSTRIAL SERVICE
- * Sovereign Native Application Lifecycle
- * (c) 2026 Noxis Industrial OS. All Rights Reserved.
- */
-package com.ahmad9815830.textilemobile
+package com.omnoralabs.noxis
 
 import android.app.Application
 import android.content.res.Configuration

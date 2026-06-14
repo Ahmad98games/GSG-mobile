@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Share, ActivityIndicator, Alert } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { THEME, COMMON_STYLES } from '../../../../src/constants/DesignSystem';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../../../src/lib/supabase';
+import { formatCurrency } from '../../../../src/lib/currency/formatCurrency';
 import { format } from 'date-fns';
+import { PartyActions } from '@/components/ui/PartyActions';
 
 /**
  * SOVEREIGN KHATA DETAIL (v2.0)
@@ -15,6 +17,7 @@ import { format } from 'date-fns';
 export default function KhataDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const navigation = useNavigation();
 
   const { data: party, isLoading } = useQuery({
     queryKey: ['khata-detail', id],
@@ -38,6 +41,20 @@ export default function KhataDetail() {
     }
   });
 
+  useEffect(() => {
+    navigation.setOptions({
+      title: party?.name || 'Khata Detail',
+      headerStyle: {
+        backgroundColor: '#0A0C0F',
+      },
+      headerTintColor: '#FFFFFF',
+      headerTitleStyle: {
+        fontWeight: '600',
+        fontSize: 15,
+      },
+    });
+  }, [party?.name]);
+
   const handleExport = async () => {
     // PDF Generation logic placeholder
     Alert.alert('EXPORT READY', 'Industrial Ledger PDF generated.');
@@ -56,7 +73,7 @@ export default function KhataDetail() {
           <View style={styles.entryTop}>
             <Text style={styles.entryNote}>{item.note || 'Internal Transaction'}</Text>
             <Text style={[styles.entryAmount, { color: isCredit ? THEME.colors.status.success : THEME.colors.status.danger }]}>
-              {isCredit ? '+' : '-'} Rs. {Number(item.amount).toLocaleString()}
+              {isCredit ? '+' : '-'} {formatCurrency(Number(item.amount))}
             </Text>
           </View>
           <Text style={styles.entryDate}>{format(new Date(item.created_at), 'dd MMM yyyy // HH:mm')}</Text>
@@ -83,9 +100,15 @@ export default function KhataDetail() {
           styles.balanceValue,
           { color: party.balance >= 0 ? THEME.colors.status.success : THEME.colors.status.danger }
         ]}>
-          Rs. {Math.abs(party.balance).toLocaleString()}
+          {formatCurrency(Math.abs(party.balance))}
           {party.balance < 0 ? ' (DEBIT)' : ' (CREDIT)'}
         </Text>
+        <PartyActions
+          name={party.name}
+          phone={party.phone || ''}
+          balance={Math.abs(party.balance)}
+          type={party.type as 'customer' | 'supplier'}
+        />
       </View>
 
       <View style={styles.timelineHeader}>

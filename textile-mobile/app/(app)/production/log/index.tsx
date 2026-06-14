@@ -4,6 +4,7 @@ import { useRouter, Stack } from 'expo-router';
 import { tcpService } from '../../../../src/services/TCPClientService';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { queueManager } from '../../../../src/services/OfflineQueueManager';
 
 export default function ProductionLogScreen() {
   const router = useRouter();
@@ -13,29 +14,39 @@ export default function ProductionLogScreen() {
 
   const handleLog = async () => {
     if (!qty) return;
+
+    // 1. Instantly trigger Success UI states (Optimistic Update)
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    try {
-      await tcpService.sendEvent('StockDelta', {
-        deltaId: Math.random().toString(36).substring(7),
-        nodeId: 'MOBILE_CLIENT',
-        operationType: 'PRODUCTION',
-        batchId: batchId,
-        qty: parseInt(qty),
-        timestamp: Date.now(),
-        vectorClock: '0:0'
-      });
+    const payload = {
+      deltaId: Math.random().toString(36).substring(7),
+      nodeId: 'MOBILE_CLIENT',
+      operationType: 'PRODUCTION',
+      batchId: batchId,
+      qty: parseInt(qty),
+      timestamp: Date.now(),
+      vectorClock: '0:0'
+    };
 
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
-    } catch (e) {
-      console.error('Log failed:', e);
-    }
+    setQty('');
+    router.back();
+
+    // 2. Dispatch network call in background
+    tcpService.sendEvent('StockDelta', payload).catch(async (err) => {
+      console.warn('[ProductionLog] sendEvent failed, enqueuing offline fallback:', err);
+      // 3. Fallback to enqueuing the request if network call fails
+      try {
+        await queueManager.enqueueTier1(5, payload);
+      } catch (queueErr) {
+        console.error('[ProductionLog] Failed to enqueue:', queueErr);
+      }
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: 'Log Production', headerStyle: { backgroundColor: '#121417' }, headerTintColor: 'white' }} />
+      <Stack.Screen options={{ title: 'Log Output', headerStyle: { backgroundColor: '#121417' }, headerTintColor: 'white' }} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.batchInfo}>
           <Text style={styles.label}>ACTIVE BATCH</Text>

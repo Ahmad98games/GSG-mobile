@@ -1,294 +1,444 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   TouchableOpacity, 
-  SafeAreaView, 
-  ScrollView,
-  Dimensions,
-  Animated,
-  RefreshControl
+  ScrollView, 
+  RefreshControl,
+  ActivityIndicator,
+  Dimensions
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
-import { BridgeStatusBar } from '../../src/components/shell/BridgeStatusBar';
 import { useBridgeStatus } from '../../src/store/BridgeStatusStore';
-import { useMessageStore } from '../../src/store/MessageStore';
-import { meshBus, MeshEvent } from '../../src/services/MeshEventBus';
-import { CctvDataService } from '../../src/services/CctvDataService';
-import * as LocalAuthentication from 'expo-local-authentication';
+import { useAuthStore } from '../../src/store/AuthStore';
+import { supabase } from '../../src/lib/supabase';
+import { getSafeStorage } from '../../src/utils/storage';
+import { getPendingCount } from '../../src/services/OfflineQueueManager';
+import { THEME } from '../../src/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { connectionState, pairedDeviceCount, tierLimit } = useBridgeStatus();
-  const { conversations } = useMessageStore();
-  
-  const [loading, setLoading] = useState(false);
-  const [cameras, setCameras] = useState<any[]>([]);
-  const [isAlertActive, setIsAlertActive] = useState(false);
-  const [alertData, setAlertData] = useState<any>(null);
+  const {
+    hubOnline,
+    businessName,
+    currency,
+    tier,
+    syncStatus,
+    connectionState,
+  } = useBridgeStatus();
 
-  const unreadCount = Array.isArray(conversations) ? conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0) : 0;
+  const [stats, setStats] = useState({
+    totalKarigars: 0,
+    presentToday: 0,
+    pendingDispatch: 0,
+    overdueInvoices: 0,
+    loading: true,
+  });
+
+  const [pendingSync, setPendingSync] = useState(0);
 
   useEffect(() => {
-    refreshCameraStatus();
+    loadStats();
     
-    const unsubBreach = meshBus.subscribe(MeshEvent.SENTINEL_BREACH, (payload: any) => {
-      setCameras(prev => prev.map(c => 
-        c.camera_id === payload.node_id ? { ...c, status: 'breach', last_frame_at: Date.now() } : c
-      ));
-    });
-
-    const unsubHeartbeat = meshBus.subscribe(MeshEvent.HEARTBEAT_ALERT, (payload: any) => {
-      if (payload.alert_type === 'node_offline') {
-        setCameras(prev => prev.map(c => 
-          c.camera_id === payload.node_id ? { ...c, status: 'offline' } : c
-        ));
-      }
-    });
-
-    const unsubPresence = meshBus.subscribe(MeshEvent.PRESENCE_UPDATE, (payload: any) => {
-      setCameras(prev => prev.map(c => 
-        c.camera_id === payload.node_id ? { ...c, status: payload.status } : c
-      ));
-    });
-
-    return () => {
-      unsubBreach();
-      unsubHeartbeat();
-      unsubPresence();
+    // Check pending sync count immediately and periodically
+    const check = async () => {
+      const count = await getPendingCount();
+      setPendingSync(count);
     };
+    check();
+    const interval = setInterval(check, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const refreshCameraStatus = async () => {
-    setLoading(true);
+  const loadStats = async () => {
     try {
-      const res = await CctvDataService.fetchCameraStatus();
-      setCameras(res);
-    } catch (e) {
-      console.error('[Dashboard] Camera fetch failed:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const session = useAuthStore.getState().session;
+      let profileId = session?.user?.id;
 
-  const handleSystemLock = async () => {
-    const auth = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Biometric Auth Required for System Lock',
-    });
-
-    if (auth.success) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      const { tcpService } = require('../../src/services/TCPClientService');
-      tcpService.sendEvent('NspEnvelope', {
-        system_lock: {
-          issued_by_node_id: 'MOBILE_ADMIN',
-          reason: 'MANUAL_LOCK',
-          timestamp: Date.now(),
-          lock: true
+      if (!profileId) {
+        const profile = await getSafeStorage('noxis_profile', null);
+        if (profile) {
+          const parsed = JSON.parse(profile);
+          profileId = parsed?.id;
         }
+      }
+
+      if (!profileId) {
+        setStats(s => ({ ...s, loading: false }));
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const [karigars, attendance, dispatch] = await Promise.allSettled([
+        supabase.from('karigars')
+          .select('id', { count: 'exact', head: true })
+          .eq('business_id', profileId)
+          .eq('status', 'active'),
+        supabase.from('attendance_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('business_id', profileId)
+          .eq('attendance_date', today)
+          .eq('status', 'present'),
+        supabase.from('dispatch_orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('business_id', profileId)
+          .in('status', ['pending', 'packed']),
+      ]);
+
+      setStats({
+        totalKarigars: karigars.status === 'fulfilled' ? karigars.value.count || 0 : 0,
+        presentToday: attendance.status === 'fulfilled' ? attendance.value.count || 0 : 0,
+        pendingDispatch: dispatch.status === 'fulfilled' ? dispatch.value.count || 0 : 0,
+        overdueInvoices: 0,
+        loading: false,
       });
+    } catch {
+      setStats(s => ({ ...s, loading: false }));
     }
   };
+
+  const handleRefresh = async () => {
+    setStats(s => ({ ...s, loading: true }));
+    await loadStats();
+  };
+
+  const isHubConnected = hubOnline || connectionState === 'connected';
+
+  const QUICK_ACTIONS = [
+    {
+      label: 'Mark Attendance',
+      icon: 'checkmark-circle-outline',
+      color: '#10B981',
+      route: '/(app)/attendance',
+    },
+    {
+      label: 'Log Production',
+      icon: 'flash-outline',
+      color: '#60A5FA',
+      route: '/(app)/production/quick-log',
+    },
+    {
+      label: 'Give Advance',
+      icon: 'cash-outline',
+      color: '#C5A059',
+      route: '/(app)/karigars',
+    },
+    {
+      label: 'Scan Barcode',
+      icon: 'barcode-outline',
+      color: '#8B5CF6',
+      route: '/(app)/scanner',
+    },
+  ];
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <BridgeStatusBar />
+      <Stack.Screen options={{ title: 'Dashboard', headerShown: false }} />
       
       <ScrollView 
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={refreshCameraStatus} tintColor="#C5A059" />}
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl 
+            refreshing={stats.loading} 
+            onRefresh={handleRefresh} 
+            tintColor="#C5A059" 
+          />
+        }
       >
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.brand}>OMNORA INDUSTRIAL PRIME</Text>
-          <Text style={styles.title}>Operation Hub</Text>
-        </View>
-
-        {/* WIDGETS */}
-        <View style={styles.widgetGrid}>
-          <View style={styles.statWidget}>
-            <Text style={styles.widgetLabel}>TODAY'S SALES</Text>
-            <Text style={styles.statValue}>Rs. 142.5k</Text>
-            <View style={styles.trendRow}>
-              <Ionicons name="trending-up" size={14} color="#10B981" />
-              <Text style={styles.trendText}>+12.4%</Text>
-            </View>
+          <View style={styles.headerTitleBox}>
+            <Text style={styles.bizName} numberOfLines={1}>
+              {businessName.toUpperCase()}
+            </Text>
+            <Text style={styles.systemSubtitle}>OPERATIONS_HUB</Text>
           </View>
-
-          <TouchableOpacity style={styles.statWidget} onPress={() => router.push('/(app)/messages')}>
-            <Text style={styles.widgetLabel}>UNREAD MESSAGES</Text>
-            <Text style={[styles.statValue, unreadCount > 0 && { color: '#60A5FA' }]}>{unreadCount}</Text>
-            <Text style={styles.trendText}>From {conversations.length} threads</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>COMMAND CENTER</Text>
-          <View style={styles.commandGrid}>
-             <TouchableOpacity style={styles.commandBtn} onPress={() => router.push('/(app)/scan')}>
-               <Ionicons name="scan" size={28} color="white" />
-               <Text style={styles.commandLabel}>Scanner</Text>
-             </TouchableOpacity>
-             <TouchableOpacity style={styles.commandBtn} onPress={() => router.push('/(app)/khata/new')}>
-               <Ionicons name="journal" size={28} color="white" />
-               <Text style={styles.commandLabel}>Quick Khata</Text>
-             </TouchableOpacity>
-             <TouchableOpacity style={styles.commandBtn} onPress={() => router.push('/(app)/finance')}>
-               <Ionicons name="cash" size={28} color="white" />
-               <Text style={styles.commandLabel}>Finance</Text>
-             </TouchableOpacity>
-             <TouchableOpacity style={styles.commandBtn} onPress={() => router.push('/(app)/cctv')}>
-               <Ionicons name="videocam" size={28} color="white" />
-               <Text style={styles.commandLabel}>CCTV Log</Text>
-             </TouchableOpacity>
+          <View style={[
+            styles.statusBadge,
+            { backgroundColor: isHubConnected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)' }
+          ]}>
+            <View style={[
+              styles.statusDot,
+              { backgroundColor: isHubConnected ? '#10B981' : '#EF4444' }
+            ]} />
+            <Text style={[
+              styles.statusText,
+              { color: isHubConnected ? '#10B981' : '#EF4444' }
+            ]}>
+              {isHubConnected ? 'Hub Online' : 'Hub Offline'}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>CCTV NODES</Text>
-          </View>
-          
-          <View style={styles.cameraGrid}>
-            {cameras.map(cam => (
-              <TouchableOpacity 
-                key={cam.camera_id} 
-                style={styles.cameraCard}
-                onPress={() => router.push(`/(app)/cctv/${cam.camera_id}` as any)}
-              >
-                <View style={styles.cameraHeader}>
-                  <Text style={styles.cameraLabel} numberOfLines={1}>{cam.label}</Text>
-                  <View style={[styles.statusDot, { backgroundColor: cam.status === 'online' ? '#10B981' : cam.status === 'breach' ? '#EF4444' : '#6B7280' }]} />
-                </View>
-                <Text style={styles.cameraSub} numberOfLines={1}>{cam.location}</Text>
-                <View style={styles.cameraFooter}>
-                  <Text style={styles.cameraMeta}>{cam.bitrate_kbps.toFixed(0)}kbps</Text>
-                  <Text style={styles.cameraMeta}>{cam.brand}</Text>
-                </View>
-                {cam.status === 'breach' && <View style={styles.breachIndicator} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {tierLimit === 'elite' && ( // Elite Only
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>SECURITY OVERRIDE</Text>
-            <View style={styles.eliteGrid}>
-              <TouchableOpacity style={[styles.eliteBtn, { backgroundColor: '#EF4444' }]} onPress={handleSystemLock}>
-                <Ionicons name="lock-closed" size={24} color="white" />
-                <Text style={styles.eliteLabel}>SYSTEM LOCK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.eliteBtn, { backgroundColor: '#F59E0B' }]}>
-                <Ionicons name="notifications" size={24} color="white" />
-                <Text style={styles.eliteLabel}>SOUND ALARM</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Sync Backlog warning banner */}
+        {pendingSync > 0 && (
+          <View style={styles.syncWarningBanner}>
+            <Ionicons name="cloud-upload-outline" size={16} color="#C5A059" />
+            <Text style={styles.syncWarningText}>
+              {pendingSync} action{pendingSync > 1 ? 's' : ''} waiting to sync with Hub
+            </Text>
           </View>
         )}
 
-        <View style={styles.bridgeInfo}>
-           <Text style={styles.bridgeText}>Hub: {pairedDeviceCount} Nodes Active</Text>
-           <Text style={styles.bridgeSubtext}>AES-256-GCM / Tactical Mesh Enabled</Text>
+        {/* Stats Grid */}
+        <Text style={styles.sectionTitle}>METRICS_TELEMETRY</Text>
+        {stats.loading ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color={THEME.colors.gold} size="small" />
+            <Text style={styles.loadingText}>SYNCING_METRICS...</Text>
+          </View>
+        ) : (
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>
+                {stats.presentToday}/{stats.totalKarigars}
+              </Text>
+              <Text style={styles.statLabel}>Present Today</Text>
+            </View>
+            
+            <View style={styles.statCard}>
+              <Text style={[
+                styles.statValue,
+                stats.pendingDispatch > 0 && { color: '#C5A059' }
+              ]}>
+                {stats.pendingDispatch}
+              </Text>
+              <Text style={styles.statLabel}>Pending Dispatch</Text>
+            </View>
+
+            {!isHubConnected && (
+              <View style={styles.statCard}>
+                <Text style={[styles.statValue, { color: '#EF4444' }]}>
+                  OFFLINE
+                </Text>
+                <Text style={styles.statLabel}>Data Queued</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Quick Actions */}
+        <Text style={styles.sectionTitle}>Command Center</Text>
+        <View style={styles.actionsGrid}>
+          {QUICK_ACTIONS.map(action => (
+            <TouchableOpacity
+              key={action.label}
+              style={[styles.actionCard, { borderColor: action.color + '30' }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(action.route as any);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIconBox, { backgroundColor: action.color + '15' }]}>
+                <Ionicons name={action.icon as any} size={28} color={action.color} />
+              </View>
+              <Text style={styles.actionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* System metadata & Tier information */}
+        <View style={styles.tierRow}>
+          <View>
+            <Text style={styles.tierText}>
+              {tier.toUpperCase()} PLAN
+            </Text>
+            <Text style={styles.tierSub}>
+              {currency} • {businessName}
+            </Text>
+          </View>
+          <Ionicons name="shield-checkmark" size={16} color={THEME.colors.gold} />
         </View>
       </ScrollView>
-
-      {isAlertActive && (
-        <View style={styles.alertOverlay}>
-           <Text style={styles.alertTitle}>CRITICAL ALERT</Text>
-           <Text style={styles.alertBody}>{alertData?.message}</Text>
-           <TouchableOpacity style={styles.ackBtn} onPress={() => setIsAlertActive(false)}>
-             <Text style={styles.ackText}>ACKNOWLEDGE</Text>
-           </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121417' },
-  scroll: { padding: 20, paddingTop: 40 },
-  header: { marginBottom: 30 },
-  brand: { color: '#C5A059', fontWeight: 'bold', fontSize: 10, letterSpacing: 2 },
-  title: { color: 'white', fontSize: 32, fontWeight: '900', marginTop: 4 },
-  widgetGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
-  statWidget: { 
-    width: (width - 52) / 2, 
-    backgroundColor: '#1F2937', 
-    padding: 16, 
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#374151'
+  container: { 
+    flex: 1, 
+    backgroundColor: THEME.colors.bg 
   },
-  widgetLabel: { color: '#9CA3AF', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
-  statValue: { color: 'white', fontSize: 24, fontWeight: '900', marginVertical: 8, fontFamily: 'JetBrains Mono' },
-  trendRow: { flexDirection: 'row', alignItems: 'center' },
-  trendText: { color: '#10B981', fontSize: 10, marginLeft: 4, fontWeight: '600' },
-  section: { marginBottom: 30 },
-  sectionTitle: { color: '#6B7280', fontSize: 12, fontWeight: 'bold', letterSpacing: 2, marginBottom: 16 },
-  commandGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  commandBtn: { 
-    width: (width - 64) / 2, 
-    backgroundColor: '#1F2937', 
-    height: 100, 
-    borderRadius: 16, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#374151'
+  scroll: { 
+    flex: 1 
   },
-  commandLabel: { color: 'white', marginTop: 8, fontSize: 12, fontWeight: '600' },
-  eliteGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  eliteBtn: { 
-    flex: 0.48, 
-    height: 60, 
-    borderRadius: 12, 
+  content: { 
+    padding: 20, 
+    paddingTop: 60,
+    paddingBottom: 40 
+  },
+  header: { 
     flexDirection: 'row', 
-    justifyContent: 'center', 
+    alignItems: 'center',
+    justifyContent: 'space-between', 
+    marginBottom: 24
+  },
+  headerTitleBox: {
+    flex: 1,
+    marginRight: 12
+  },
+  bizName: { 
+    fontSize: 20, 
+    fontWeight: '900',
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.monoExtraBold,
+    letterSpacing: 0.5
+  },
+  systemSubtitle: {
+    fontSize: 9,
+    fontFamily: THEME.fonts.monoBold,
+    color: THEME.colors.blue,
+    letterSpacing: 1.5,
+    marginTop: 2
+  },
+  statusBadge: { 
+    flexDirection: 'row',
+    alignItems: 'center', 
+    gap: 6,
+    paddingHorizontal: 10, 
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)'
+  },
+  statusDot: { 
+    width: 6, 
+    height: 6,
+    borderRadius: 3 
+  },
+  statusText: { 
+    fontSize: 10, 
+    fontWeight: '700',
+    fontFamily: THEME.fonts.monoBold
+  },
+  syncWarningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(197, 160, 89, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(197, 160, 89, 0.25)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 24,
+  },
+  syncWarningText: {
+    fontSize: 11,
+    color: '#C5A059',
+    fontWeight: '600',
+    fontFamily: THEME.fonts.mono
+  },
+  sectionTitle: { 
+    fontSize: 10, 
+    fontWeight: '700',
+    color: THEME.colors.textSecondary, 
+    textTransform: 'uppercase',
+    letterSpacing: 2, 
+    marginBottom: 12,
+    fontFamily: THEME.fonts.monoBold
+  },
+  loadingBox: {
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+    gap: 10
+  },
+  loadingText: {
+    color: THEME.colors.textSecondary,
+    fontSize: 9,
+    fontFamily: THEME.fonts.mono
+  },
+  statsRow: { 
+    flexDirection: 'row', 
+    gap: 12,
+    marginBottom: 28 
+  },
+  statCard: { 
+    flex: 1, 
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1, 
+    borderColor: THEME.colors.border,
+    borderRadius: 16, 
+    padding: 16, 
     alignItems: 'center' 
   },
-  eliteLabel: { color: 'white', fontWeight: 'bold', marginLeft: 10 },
-  bridgeInfo: { alignItems: 'center', marginTop: 20, marginBottom: 40 },
-  bridgeText: { color: '#4B5563', fontSize: 12, fontWeight: 'bold' },
-  bridgeSubtext: { color: '#374151', fontSize: 10, marginTop: 4 },
-  alertOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(239, 68, 68, 0.95)', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: 30 },
-  alertTitle: { color: 'white', fontSize: 36, fontWeight: '900' },
-  alertBody: { color: 'white', fontSize: 18, textAlign: 'center', marginVertical: 20 },
-  ackBtn: { backgroundColor: 'white', paddingHorizontal: 40, paddingVertical: 16, borderRadius: 12 },
-  ackText: { color: '#EF4444', fontWeight: 'bold', fontSize: 16 },
-  
-  // CCTV GRID STYLES
-  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  viewAll: { color: '#60A5FA', fontSize: 12, fontWeight: 'bold' },
-  cameraGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  cameraCard: { 
-    width: (width - 52) / 2, 
-    backgroundColor: '#1F2937', 
-    padding: 16, 
-    borderRadius: 20, 
-    borderWidth: 1, 
-    borderColor: '#374151',
-    position: 'relative',
-    overflow: 'hidden'
+  statValue: { 
+    fontSize: 22, 
+    fontWeight: '800',
+    fontFamily: THEME.fonts.monoExtraBold, 
+    color: '#FFFFFF',
+    marginBottom: 6 
   },
-  cameraHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cameraLabel: { color: 'white', fontSize: 13, fontWeight: 'bold', flex: 1, marginRight: 8 },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
-  cameraSub: { color: '#9CA3AF', fontSize: 10, marginTop: 4 },
-  cameraFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, opacity: 0.6 },
-  cameraMeta: { color: '#9CA3AF', fontSize: 8, fontWeight: 'bold', fontFamily: 'JetBrains Mono' },
-  breachIndicator: { 
-    position: 'absolute', 
-    top: 0, left: 0, right: 0, bottom: 0, 
-    borderWidth: 2, 
-    borderColor: '#EF4444', 
-    borderRadius: 20,
-    backgroundColor: 'rgba(239, 68, 68, 0.05)'
-  }
+  statLabel: { 
+    fontSize: 10, 
+    color: THEME.colors.textSecondary,
+    textTransform: 'uppercase', 
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    fontFamily: THEME.fonts.monoBold
+  },
+  actionsGrid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap',
+    gap: 12, 
+    marginBottom: 28 
+  },
+  actionCard: { 
+    width: (width - 52) / 2, 
+    backgroundColor: THEME.colors.surface,
+    borderWidth: 1, 
+    borderRadius: 16,
+    padding: 16, 
+    alignItems: 'center', 
+    gap: 12 
+  },
+  actionIconBox: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  actionLabel: { 
+    fontSize: 12, 
+    fontWeight: '600',
+    color: '#E2E8F0', 
+    textAlign: 'center' 
+  },
+  tierRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 20, 
+    borderTopWidth: 1,
+    borderTopColor: THEME.colors.border
+  },
+  tierText: { 
+    fontSize: 10, 
+    fontWeight: '700',
+    color: THEME.colors.gold, 
+    letterSpacing: 2,
+    fontFamily: THEME.fonts.monoBold
+  },
+  tierSub: { 
+    fontSize: 10, 
+    color: THEME.colors.textMuted,
+    fontFamily: THEME.fonts.mono,
+    marginTop: 2
+  },
 });

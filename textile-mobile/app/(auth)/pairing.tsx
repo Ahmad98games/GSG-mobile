@@ -13,7 +13,7 @@ import {
   FlatList,
   Animated
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -59,6 +59,8 @@ export default function PairingScreen() {
       discoveryService.stopScan();
     };
   }, [method]);
+
+
 
   const [scanStatus, setScanStatus] = useState<'NEUTRAL' | 'SUCCESS' | 'ERROR'>('NEUTRAL');
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -159,6 +161,7 @@ export default function PairingScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ title: 'Pair with Hub' }} />
       <View style={styles.header}>
         <Text style={styles.brand}>OMNORA OS / TACTICAL BRIDGE</Text>
         <Text style={styles.title}>NODE BONDING</Text>
