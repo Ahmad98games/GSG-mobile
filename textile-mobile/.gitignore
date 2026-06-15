@@ -36,3 +36,4 @@ GoogleService-Info.plist
 /web-build
 .pnp
 .pnp.js
+*.apk
