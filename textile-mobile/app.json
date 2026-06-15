@@ -19,7 +19,7 @@
       "package": "com.omnoralabs.noxis",
       "versionCode": 2,
       "jsEngine": "hermes",
-      "newArchEnabled": true,
+      "newArchEnabled": false,
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",
