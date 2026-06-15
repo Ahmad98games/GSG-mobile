@@ -75,7 +75,7 @@ class IndustrialErrorBoundary extends React.Component<{ children: React.ReactNod
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     JetBrainsMono_400Regular,
     JetBrainsMono_700Bold,
     'JetBrainsMono_900Black': JetBrainsMono_800ExtraBold,
@@ -159,14 +159,17 @@ export default function RootLayout() {
   }, [fontsLoaded, isAuthenticated, subscriptionActive, isDeviceApproved, nodeTier, pathname]);
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded || fontError) {
+      if (fontError) {
+        console.error('[RootLayout] Font loading failed, falling back to default:', fontError);
+      }
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, fontError]);
 
   const { activeBreaches, removeBreach } = useAlertStore();
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && !fontError) {
     return null;
   }
 
