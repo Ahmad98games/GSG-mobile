@@ -1,2 +1,5 @@
 name = "noxis-mobile"
-pages_build_output_dir = "textile-mobile/dist"
+compatibility_date = "2026-06-18"
+
+[assets]
+directory = "textile-mobile/dist"
