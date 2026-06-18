@@ -1,0 +1,2 @@
+name = "noxis-mobile"
+pages_build_output_dir = "textile-mobile/dist"
