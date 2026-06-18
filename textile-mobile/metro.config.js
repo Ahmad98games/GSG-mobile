@@ -70,6 +70,24 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
         type: 'sourceFile',
       };
     }
+    if (moduleName === 'expo-file-system') {
+      return {
+        filePath: path.resolve(__dirname, 'src/lib/file-system-mock.web.ts'),
+        type: 'sourceFile',
+      };
+    }
+    if (moduleName === 'expo-local-authentication') {
+      return {
+        filePath: path.resolve(__dirname, 'src/lib/empty-mock.js'),
+        type: 'sourceFile',
+      };
+    }
+    if (moduleName === 'expo-haptics') {
+      return {
+        filePath: path.resolve(__dirname, 'src/lib/empty-mock.js'),
+        type: 'sourceFile',
+      };
+    }
     
     let resolved;
     try {

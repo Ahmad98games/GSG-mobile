@@ -25,7 +25,7 @@ import { RedAlertOverlay } from '../src/components/alerts/RedAlertOverlay';
 import { VoiceFileManager } from '../src/services/VoiceFileManager';
 import { NspService } from '../src/services/NspService';
 import { tcpService } from '../src/services/TCPClientService';
-import notifee, { EventType } from '@notifee/react-native';
+import notifee, { EventType } from '../src/lib/notifications/notifee';
 import * as SplashScreen from 'expo-splash-screen';
 
 // Keep the splash screen visible while we fetch resources
@@ -86,6 +86,11 @@ export default function RootLayout() {
   const pathname = usePathname();
 
   useEffect(() => {
+    // GUARD: Do not navigate until fonts are loaded and <Stack> is mounted.
+    // Calling router.replace() before the Stack renders causes:
+    // "Attempted to navigate before mounting the Root Layout component"
+    if (!fontsLoaded && !fontError) return;
+
     // GUARANTEE COLD BOOT MAINTENANCE
     try {
       queueManager.drainPersistedQueue();
