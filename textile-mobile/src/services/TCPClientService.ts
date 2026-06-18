@@ -1,6 +1,6 @@
 import TcpSocket from 'react-native-tcp-socket';
 import EventEmitter from 'eventemitter3';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MobileCrypto } from '../lib/MobileCrypto';
@@ -19,6 +19,7 @@ const ACK_TIMEOUT = 5000;
  */
 class TCPClientService extends EventEmitter {
   private socket: any = null;
+  private wsSocket: WebSocket | null = null;  // Web-only WebSocket bridge
   private dataBuffer: Buffer = Buffer.alloc(0);
   private backoffIndex: number = 0;
   private isConnected: boolean = false;
@@ -49,9 +50,16 @@ class TCPClientService extends EventEmitter {
     this.host = host;
     this.nodeId = await SecureStore.getItemAsync('gs_node_id');
     this.meshKey = await SecureStore.getItemAsync('gs_mesh_key');
-    
+
     const bridgeStore = useBridgeStatus.getState();
     bridgeStore.setConnectionState('reconnecting');
+
+    // ── WEB PATH: Use WebSocket bridge instead of raw TCP ──────────────────
+    if (Platform.OS === 'web') {
+      this.connectViaWebSocket(host);
+      return;
+    }
+    // ── NATIVE PATH: Raw TCP (unchanged) ──────────────────────────────────
 
     if (this.socket) {
       try { this.socket.destroy(); } catch (e) {}
@@ -84,6 +92,70 @@ class TCPClientService extends EventEmitter {
     this.socket.on('close', () => {
       this.handleDisconnect();
     });
+  }
+
+  /**
+   * WEB ONLY — Connect to Hub via WebSocket mobile-bridge endpoint.
+   * Reuses the same processMessage() handler as the native TCP path,
+   * so all protocol logic (HI_ACK, ACK, NSP_PACKET, etc.) is shared.
+   */
+  private connectViaWebSocket(host: string) {
+    if (this.wsSocket) {
+      try { this.wsSocket.close(); } catch (e) {}
+      this.wsSocket = null;
+    }
+
+    const wsUrl = `ws://${host}:3000/mobile-bridge`;
+    console.log(`[WS] Connecting to ${wsUrl} (Attempt ${this.backoffIndex + 1})`);
+
+    const ws = new WebSocket(wsUrl);
+    this.wsSocket = ws;
+
+    ws.onopen = async () => {
+      this.isConnected = true;
+      this.backoffIndex = 0;
+      this.missedHeartbeats = 0;
+
+      const bridgeStore = useBridgeStatus.getState();
+      bridgeStore.setConnectionState('connected');
+      bridgeStore.resetReconnectAttempts();
+      this.emit('connectionChange', true);
+
+      // Send HI handshake as plain JSON (WebSocket bridge handles it)
+      const sessionToken = await AsyncStorage.getItem('omnora_session_token');
+      ws.send(JSON.stringify({
+        t: 'HI',
+        id: this.nodeId,
+        token: sessionToken,
+        ts: Date.now(),
+        platform: 'web',
+      }));
+
+      this.startHeartbeatWatchdog();
+
+      const { NoxisSynapseService } = require('./NoxisSynapseService');
+      await NoxisSynapseService.reconcileState();
+    };
+
+    ws.onmessage = (event: MessageEvent) => {
+      try {
+        const msg = typeof event.data === 'string'
+          ? JSON.parse(event.data)
+          : JSON.parse(new TextDecoder().decode(event.data));
+        this.processMessage(msg);
+      } catch (e) {
+        console.error('[WS] Message parse error:', e);
+      }
+    };
+
+    ws.onerror = (err: Event) => {
+      console.error('[WS] Socket error:', err);
+    };
+
+    ws.onclose = () => {
+      if (this.wsSocket === ws) this.wsSocket = null;
+      this.handleDisconnect();
+    };
   }
 
   private async handleHandshake() {
@@ -157,6 +229,10 @@ class TCPClientService extends EventEmitter {
       this.socket.removeAllListeners();
       this.socket.destroy();
       this.socket = null;
+    }
+    if (this.wsSocket) {
+      try { this.wsSocket.close(); } catch (e) {}
+      this.wsSocket = null;
     }
   }
 
@@ -395,6 +471,17 @@ class TCPClientService extends EventEmitter {
   }
 
   public async sendMessage(payload: any) {
+    // ── WEB PATH: Send as plain JSON over WebSocket ────────────────────────
+    if (Platform.OS === 'web') {
+      if (!this.wsSocket || this.wsSocket.readyState !== WebSocket.OPEN || !this.nodeId) return;
+      try {
+        this.wsSocket.send(JSON.stringify({ ...payload, fromNodeId: this.nodeId, ts: payload.ts || Date.now() }));
+      } catch (e) {
+        console.error('[WS] Send Message Error:', e);
+      }
+      return;
+    }
+    // ── NATIVE PATH: Protobuf over TCP (unchanged) ─────────────────────────
     if (!this.socket || !this.isConnected || !this.nodeId) return;
     try {
       let proto: Uint8Array;

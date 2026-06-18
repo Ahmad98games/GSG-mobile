@@ -1,7 +1,8 @@
 # Noxis Mobile Production — Security Ignores
 node_modules
 .expo
-dist
+# dist is tracked for Cloudflare Pages deployment
+!noxis-mobile-pwa/dist
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
