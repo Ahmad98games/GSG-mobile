@@ -6,6 +6,7 @@ import { IndustrialSyncIndicator } from '../../src/components/IndustrialSyncIndi
 import { useVocabulary } from '../../src/store/VocabularyContext';
 import { useConnection } from '../../src/store/ConnectionContext';
 import { useDiagnosticStore } from '../../src/store/DiagnosticsStore';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 
 const COLORS = {
   bg: '#09090b',
@@ -74,10 +75,7 @@ export default function WorkerDashboard() {
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.industryTag}>SYSTEM INDUSTRIAL MODULE</Text>
-          <Text style={styles.title}>WORKER CONTROL</Text>
-        </View>
+        <ScreenHeader title="Worker Control" subtitle="SYSTEM INDUSTRIAL MODULE" showBack={true} />
 
         <View style={styles.grid}>
           <MenuButton 

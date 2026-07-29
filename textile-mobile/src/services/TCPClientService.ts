@@ -1,6 +1,6 @@
 import TcpSocket from 'react-native-tcp-socket';
 import EventEmitter from 'eventemitter3';
-import { AppState, Platform, type AppStateStatus } from 'react-native';
+import { AppState, Platform, Alert, type AppStateStatus } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MobileCrypto } from '../lib/MobileCrypto';
@@ -8,18 +8,30 @@ import { ProtobufService } from './ProtobufService';
 import { useBridgeStatus } from '../store/BridgeStatusStore';
 import { queueManager } from './OfflineQueueManager';
 
+import { useBridgeStatusStore } from '@/src/stores/BridgeStatusStore';
+import { getOrCreateDeviceId, getDeviceLabel } from '@/src/utils/deviceId';
+import { getSafeStorage } from '@/src/utils/storage';
+import {
+  notifyLowStock,
+  notifyPaymentOverdue,
+  notifyForesight,
+} from '@/services/NotificationService';
+
 const HUB_PORT = 7447;
 const BACKOFF_SEQUENCE = [1000, 2000, 4000, 8000, 15000, 30000];
 const HEARTBEAT_INTERVAL = 15000;
 const ACK_TIMEOUT = 5000;
 
-/**
- * PRODUCTION-GRADE TCP CLIENT SERVICE v2
- * Implements resilient range handling, session resumption, and watchdog monitoring.
- */
+// ── WebSocket Bridge Module-Level Variables ─────────────────────────────────
+let wsSocket: WebSocket | null = null;
+let reconnectTimer: any = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_BASE_DELAY = 2000;
+
+// ── TCP Client Service Class (Integrated) ────────────────────────────────────
 class TCPClientService extends EventEmitter {
   private socket: any = null;
-  private wsSocket: WebSocket | null = null;  // Web-only WebSocket bridge
   private dataBuffer: Buffer = Buffer.alloc(0);
   private backoffIndex: number = 0;
   private isConnected: boolean = false;
@@ -54,12 +66,12 @@ class TCPClientService extends EventEmitter {
     const bridgeStore = useBridgeStatus.getState();
     bridgeStore.setConnectionState('reconnecting');
 
-    // ── WEB PATH: Use WebSocket bridge instead of raw TCP ──────────────────
-    if (Platform.OS === 'web') {
-      this.connectViaWebSocket(host);
+    // ── WEB/BRIDGE PATH: Use WebSocket bridge if Web or URL matches ws:// ────
+    if (Platform.OS === 'web' || host.startsWith('ws://') || host.startsWith('wss://')) {
+      connectViaWebSocket(host);
       return;
     }
-    // ── NATIVE PATH: Raw TCP (unchanged) ──────────────────────────────────
+    // ── NATIVE PATH: Raw TCP ──────────────────────────────────────────────
 
     if (this.socket) {
       try { this.socket.destroy(); } catch (e) {}
@@ -94,72 +106,7 @@ class TCPClientService extends EventEmitter {
     });
   }
 
-  /**
-   * WEB ONLY — Connect to Hub via WebSocket mobile-bridge endpoint.
-   * Reuses the same processMessage() handler as the native TCP path,
-   * so all protocol logic (HI_ACK, ACK, NSP_PACKET, etc.) is shared.
-   */
-  private connectViaWebSocket(host: string) {
-    if (this.wsSocket) {
-      try { this.wsSocket.close(); } catch (e) {}
-      this.wsSocket = null;
-    }
-
-    const wsUrl = `ws://${host}:3000/mobile-bridge`;
-    console.log(`[WS] Connecting to ${wsUrl} (Attempt ${this.backoffIndex + 1})`);
-
-    const ws = new WebSocket(wsUrl);
-    this.wsSocket = ws;
-
-    ws.onopen = async () => {
-      this.isConnected = true;
-      this.backoffIndex = 0;
-      this.missedHeartbeats = 0;
-
-      const bridgeStore = useBridgeStatus.getState();
-      bridgeStore.setConnectionState('connected');
-      bridgeStore.resetReconnectAttempts();
-      this.emit('connectionChange', true);
-
-      // Send HI handshake as plain JSON (WebSocket bridge handles it)
-      const sessionToken = await AsyncStorage.getItem('omnora_session_token');
-      ws.send(JSON.stringify({
-        t: 'HI',
-        id: this.nodeId,
-        token: sessionToken,
-        ts: Date.now(),
-        platform: 'web',
-      }));
-
-      this.startHeartbeatWatchdog();
-
-      const { NoxisSynapseService } = require('./NoxisSynapseService');
-      await NoxisSynapseService.reconcileState();
-    };
-
-    ws.onmessage = (event: MessageEvent) => {
-      try {
-        const msg = typeof event.data === 'string'
-          ? JSON.parse(event.data)
-          : JSON.parse(new TextDecoder().decode(event.data));
-        this.processMessage(msg);
-      } catch (e) {
-        console.error('[WS] Message parse error:', e);
-      }
-    };
-
-    ws.onerror = (err: Event) => {
-      console.error('[WS] Socket error:', err);
-    };
-
-    ws.onclose = () => {
-      if (this.wsSocket === ws) this.wsSocket = null;
-      this.handleDisconnect();
-    };
-  }
-
   private async handleHandshake() {
-    // Session Resumption: Send token BEFORE ECDH to skip re-pairing
     const sessionToken = await SecureStore.getItemAsync('omnora_session_token');
     
     this.sendMessage({
@@ -183,7 +130,6 @@ class TCPClientService extends EventEmitter {
         return;
       }
 
-      // Send HeartbeatEvent (Tier 3)
       const { MessageService } = require('./MessageService');
       MessageService.sendHeartbeat();
     }, HEARTBEAT_INTERVAL);
@@ -198,109 +144,60 @@ class TCPClientService extends EventEmitter {
       this.heartbeatTimer = null;
     }
 
+    if (this.socket) {
+      try { this.socket.destroy(); } catch (e) {}
+      this.socket = null;
+    }
+
     const bridgeStore = useBridgeStatus.getState();
     bridgeStore.setConnectionState('offline');
     this.emit('connectionChange', false);
+
+    // Reconnection Loop
+    const delay = BACKOFF_SEQUENCE[this.backoffIndex] || 30000;
+    this.backoffIndex = Math.min(this.backoffIndex + 1, BACKOFF_SEQUENCE.length - 1);
     
-    const { meshBus, MeshEvent } = require('./MeshEventBus');
-    meshBus.broadcast(MeshEvent.HUB_STATUS_CHANGE, { status: 'OFFLINE' });
-
-    if (this.socket) {
-      try { 
-        this.socket.removeAllListeners();
-        this.socket.destroy(); 
-      } catch (e) {}
-      this.socket = null;
-    }
-
-    this.scheduleReconnect();
-  }
-
-  public destroy() {
-    if (this.appStateSubscription) {
-      this.appStateSubscription.remove();
-      this.appStateSubscription = null;
-    }
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer);
-      this.heartbeatTimer = null;
-    }
-    if (this.socket) {
-      this.socket.removeAllListeners();
-      this.socket.destroy();
-      this.socket = null;
-    }
-    if (this.wsSocket) {
-      try { this.wsSocket.close(); } catch (e) {}
-      this.wsSocket = null;
-    }
-  }
-
-  private scheduleReconnect() {
-    const bridgeStore = useBridgeStatus.getState();
-    bridgeStore.incrementReconnectAttempts();
-
-    if (bridgeStore.reconnectAttempts > 5) {
-      this.emit('hub_unreachable');
-    }
-
-    // Exponential Backoff Delay
-    const delay = Math.min(BACKOFF_SEQUENCE[this.backoffIndex] || 30000, 30000);
-    console.log(`[TCP] Reconnecting in ${delay}ms... (Attempt ${bridgeStore.reconnectAttempts})`);
-    
+    console.log(`[TCP] Reconnecting in ${delay}ms`);
     setTimeout(() => {
-      if (!this.isConnected && this.host) {
+      if (this.host && !this.isConnected) {
         this.connect(this.host);
-      } else if (!this.host) {
-        // If host is lost, restart auto-discovery
-        const { NoxisDiscoveryService } = require('./NoxisDiscoveryService');
-        NoxisDiscoveryService.startScan();
       }
     }, delay);
-
-    // Advance backoff sequence
-    if (this.backoffIndex < BACKOFF_SEQUENCE.length - 1) {
-      this.backoffIndex++;
-    }
   }
 
-  private handleData(chunk: Uint8Array) {
-    this.dataBuffer = Buffer.concat([this.dataBuffer, Buffer.from(chunk)]);
+  private handleData(data: Uint8Array) {
+    this.dataBuffer = Buffer.concat([this.dataBuffer, Buffer.from(data)]);
     
     while (this.dataBuffer.length >= 4) {
-      try {
-        const length = this.dataBuffer.readUInt32LE(0);
-        if (this.dataBuffer.length >= 4 + length) {
-          const payload = this.dataBuffer.subarray(4, 4 + length);
-          this.dataBuffer = this.dataBuffer.subarray(4 + length);
-          this.processRawPayload(payload);
-        } else {
-          break; // Wait for more data
-        }
-      } catch (e) {
-        console.error('[TCP] Framing Error:', e);
-        this.dataBuffer = Buffer.alloc(0); // Reset on corruption
-        break;
-      }
+      const length = this.dataBuffer.readUInt32LE(0);
+      if (this.dataBuffer.length < length + 4) break; // Frame incomplete
+      
+      const payload = this.dataBuffer.subarray(4, length + 4);
+      this.dataBuffer = this.dataBuffer.subarray(length + 4);
+      
+      this.decryptAndProcess(payload);
     }
   }
 
-  private async processRawPayload(payload: Buffer) {
+  private async decryptAndProcess(payload: Buffer) {
     try {
-      let decrypted: any;
-      const raw = payload.toString('utf8');
-
-      if (raw.startsWith('{')) {
-        decrypted = JSON.parse(raw);
+      let raw: string;
+      if (this.meshKey) {
+        const decrypted = await MobileCrypto.decrypt(payload, this.meshKey);
+        const decoded = ProtobufService.decode(decrypted);
+        raw = decoded.content || JSON.stringify(decoded);
       } else {
-        // Assume encrypted if not raw JSON
-        if (this.meshKey) {
-          const decryptedBytes = await MobileCrypto.decrypt(payload, this.meshKey);
-          const decryptedStr = Buffer.from(decryptedBytes).toString('utf8');
-          decrypted = JSON.parse(decryptedStr);
-        } else {
-          decrypted = JSON.parse(raw);
-        }
+        const decoded = ProtobufService.decode(payload);
+        raw = decoded.content || JSON.stringify(decoded);
+      }
+
+      let decrypted: any;
+      try {
+        decrypted = JSON.parse(raw);
+      } catch {
+        // Fallback if content was encrypted/decrypted but is already JSON or raw string
+        const decryptedStr = raw.startsWith('{') || raw.startsWith('[') ? raw : raw;
+        decrypted = JSON.parse(decryptedStr);
       }
       this.processMessage(decrypted);
     } catch (e) {
@@ -318,7 +215,7 @@ class TCPClientService extends EventEmitter {
         break;
 
       case 'HI_ACK':
-        this.missedHeartbeats = 0; // Reset on any valid hub response
+        this.missedHeartbeats = 0;
         if (msg.offset !== undefined) {
           bridgeStore.setSyncOffset(msg.offset);
           await queueManager.drainPersistedQueue();
@@ -329,11 +226,6 @@ class TCPClientService extends EventEmitter {
         
         const { NspService: HiNsp } = require('./NspService');
         HiNsp.onHubAck(msg);
-
-        if (msg.profile) {
-          // Will be handled by ProfileStore
-          this.emit('profileChange', msg.profile);
-        }
         break;
 
       case 'ACK':
@@ -344,55 +236,12 @@ class TCPClientService extends EventEmitter {
         }
         bridgeStore.setLastAckAt(now);
         
-        // Resolve pending request if packetId matches
         if (msg.packetId && this.pendingRequests.has(msg.packetId)) {
           const req = this.pendingRequests.get(msg.packetId)!;
           clearTimeout(req.timeout);
           this.pendingRequests.delete(msg.packetId);
           req.resolve(msg);
         }
-        
-        const { NspService: AckNsp } = require('./NspService');
-        AckNsp.onHubAck(msg);
-        break;
-
-      case 'HB_ACK':
-        this.missedHeartbeats = 0;
-        break;
-        
-      case 'MSG':
-        const { MessageService } = require('./MessageService');
-        MessageService.receiveMessage(msg.payload);
-        break;
-
-      case 'TELEMETRY':
-        const { useDiagnosticStore } = require('../store/DiagnosticsStore');
-        useDiagnosticStore.getState().addTelemetry({
-          timestamp: msg.ts || Date.now(),
-          cpu_temp: msg.cpu_temp || 0,
-          cpu_load: msg.cpu_load || 0,
-          ram_usage: msg.ram_usage || 0,
-          yarn_tension: msg.yarn_tension || 0,
-          loom_speed: msg.loom_speed || 0,
-          vibration_index: msg.vibration_index || 0,
-        });
-        break;
-
-      case 'CRITICAL_SECURITY':
-        const { SentinelService } = require('../lib/notifications/SentinelService');
-        SentinelService.triggerSecurityAlert(
-          msg.title || 'SECURITY BREACH',
-          msg.body || 'Intruder detected in Zone 4. Review YOLO footage.',
-          msg.image_url // BigPicture frame from PC Hub
-        );
-        break;
-        
-      case 'PRODUCTION_MILESTONE':
-        const { SentinelService: ProductionSentinel } = require('../lib/notifications/SentinelService');
-        ProductionSentinel.triggerProductionMilestone(
-          msg.title || 'BATCH COMPLETED',
-          msg.body || 'Loom #12 finished Lot 404.'
-        );
         break;
 
       case 'NSP_PACKET':
@@ -421,6 +270,19 @@ class TCPClientService extends EventEmitter {
   }
 
   public async sendEvent(eventType: string, eventData: any) {
+    if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+      try {
+        wsSocket.send(JSON.stringify({
+          type: eventType,
+          ...eventData,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.error('[WS] Event Send Failure:', e);
+      }
+      return;
+    }
+
     if (!this.socket || !this.isConnected || !this.nodeId || !this.meshKey) return;
 
     try {
@@ -435,15 +297,15 @@ class TCPClientService extends EventEmitter {
     }
   }
 
-  /**
-   * Sends an NSP request and waits for a response with the same requestId.
-   */
   public async request(payload: any, timeout: number = 10000): Promise<any> {
+    if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+      return requestHubData(payload.resource || 'data', payload.params || {});
+    }
+
     if (!this.isConnected) throw new Error('OFFLINE');
     
     const requestId = Math.random().toString(36).substring(2, 10);
     
-    // Inject requestId into the nsp envelope if it's an NSP packet
     if (payload.nsp) {
       payload.nsp.requestId = requestId;
     } else {
@@ -471,17 +333,16 @@ class TCPClientService extends EventEmitter {
   }
 
   public async sendMessage(payload: any) {
-    // ── WEB PATH: Send as plain JSON over WebSocket ────────────────────────
-    if (Platform.OS === 'web') {
-      if (!this.wsSocket || this.wsSocket.readyState !== WebSocket.OPEN || !this.nodeId) return;
+    if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
       try {
-        this.wsSocket.send(JSON.stringify({ ...payload, fromNodeId: this.nodeId, ts: payload.ts || Date.now() }));
+        const nodeId = this.nodeId || await AsyncStorage.getItem('gs_node_id') || 'unknown_node';
+        wsSocket.send(JSON.stringify({ ...payload, fromNodeId: nodeId, ts: payload.ts || Date.now() }));
       } catch (e) {
         console.error('[WS] Send Message Error:', e);
       }
       return;
     }
-    // ── NATIVE PATH: Protobuf over TCP (unchanged) ─────────────────────────
+
     if (!this.socket || !this.isConnected || !this.nodeId) return;
     try {
       let proto: Uint8Array;
@@ -525,12 +386,360 @@ class TCPClientService extends EventEmitter {
     }
   }
 
-  public getStatus() { return this.isConnected; }
+  public getStatus() { 
+    return this.isConnected || (wsSocket !== null && wsSocket.readyState === WebSocket.OPEN); 
+  }
   
   public async drainQueue() {
     const { queueManager } = require('./OfflineQueueManager');
     await queueManager.drainPersistedQueue();
   }
+
+  public destroy() {
+    disconnect();
+    if (this.socket) {
+      try { this.socket.destroy(); } catch (e) {}
+      this.socket = null;
+    }
+    this.isConnected = false;
+    if (this.appStateSubscription) {
+      this.appStateSubscription.remove();
+      this.appStateSubscription = null;
+    }
+  }
 }
 
 export const tcpService = new TCPClientService();
+
+// ── WebSocket Bridge Implementation (Hardened) ──────────────────────────────
+export async function connectViaWebSocket(
+  bridgeUrl: string
+): Promise<void> {
+  // Clear any existing connection
+  if (wsSocket) {
+    try { wsSocket.close(); } catch (e) {}
+    wsSocket = null;
+  }
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  const deviceId = await getOrCreateDeviceId();
+  const deviceLabel = await getDeviceLabel();
+
+  // Store the bridge URL so we can reconnect
+  await AsyncStorage.setItem('noxis_bridge_url', bridgeUrl);
+
+  useBridgeStatusStore.getState().setStatus({
+    syncStatus: 'syncing',
+    hubOnline: false,
+  });
+
+  try {
+    wsSocket = new WebSocket(bridgeUrl);
+  } catch (err: any) {
+    console.error('[WS] Failed to create socket:', err);
+    scheduleReconnect(bridgeUrl);
+    return;
+  }
+
+  wsSocket.onopen = async () => {
+    console.log('[WS] Connected to Hub bridge');
+    reconnectAttempts = 0;
+    tcpService.emit('connectionChange', true);
+
+    // Send pairing request immediately
+    wsSocket?.send(JSON.stringify({
+      type: 'PAIR_REQUEST',
+      deviceId,
+      deviceLabel,
+      appVersion: '13.0.0',
+      platform: Platform.OS,
+    }));
+  };
+
+  wsSocket.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      handleBridgeMessage(msg);
+    } catch (err) {
+      console.error('[WS] Parse error:', err);
+    }
+  };
+
+  wsSocket.onclose = (event) => {
+    console.log(`[WS] Disconnected: ${event.code} ${event.reason}`);
+    wsSocket = null;
+    tcpService.emit('connectionChange', false);
+    
+    useBridgeStatusStore.getState().setStatus({
+      hubOnline: false,
+      syncStatus: 'offline',
+    });
+
+    // Don't reconnect if deliberately closed
+    if (event.code === 1000) return;
+
+    scheduleReconnect(bridgeUrl);
+  };
+
+  wsSocket.onerror = (err) => {
+    console.error('[WS] Socket error:', err);
+    useBridgeStatusStore.getState().setStatus({
+      hubOnline: false,
+      syncStatus: 'offline',
+    });
+  };
+}
+
+function scheduleReconnect(
+  bridgeUrl: string
+): void {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.log('[WS] Max reconnect attempts reached');
+    return;
+  }
+
+  // Exponential backoff: 2s, 4s, 8s... max 60s
+  const delay = Math.min(
+    RECONNECT_BASE_DELAY * Math.pow(2, reconnectAttempts),
+    60000
+  );
+  reconnectAttempts++;
+
+  console.log(`[WS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
+
+  reconnectTimer = setTimeout(() => {
+    connectViaWebSocket(bridgeUrl);
+  }, delay);
+}
+
+function handleBridgeMessage(msg: any): void {
+  const store = useBridgeStatusStore.getState();
+
+  switch (msg.type) {
+    case 'HUB_ACK': {
+      const ackPayload = {
+        businessName: msg.businessName || 'Noxis Factory',
+        businessId: msg.businessId || 'biz_01',
+        role: (msg.role || 'owner').toLowerCase(),
+        allowedTables: Array.isArray(msg.allowedTables)
+          ? msg.allowedTables
+          : [
+              'ledger_entries',
+              'peshgi_transactions',
+              'parties',
+              'karigar_logs',
+              'piece_wages',
+              'pos_orders',
+              'customers',
+              'suppliers',
+            ],
+        blockedTables: Array.isArray(msg.blockedTables) ? msg.blockedTables : [],
+        hubHwid: msg.hubHwid || msg.hwid || 'hub_hwid_default',
+      };
+
+      store.setHubAckPayload(ackPayload as any);
+
+      SecureStore.setItemAsync(
+        'noxis_hub_ack_payload',
+        JSON.stringify(ackPayload)
+      ).catch((err) => {
+        console.error('[WS] Failed to persist HUB_ACK in SecureStore:', err);
+      });
+
+      store.setStatus({
+        hubOnline: true,
+        syncStatus: 'synced',
+        lastSeen: new Date().toISOString(),
+
+        businessId: msg.businessId,
+        businessName: msg.businessName,
+        industry: msg.industry,
+        city: msg.city,
+        countryCode: msg.countryCode,
+        currency: msg.currency,
+        ownerPhone: msg.ownerPhone,
+
+        tier: msg.tier,
+        maxDevices: msg.maxDevices,
+        isTrialActive: msg.isTrialActive,
+        trialDaysRemaining: msg.trialDaysRemaining,
+
+        canViewFinance: msg.canViewFinance,
+        canViewIntelligence: msg.canViewIntelligence,
+        canAccessApi: msg.canAccessApi,
+        canUseAdvancedReports: msg.canUseAdvancedReports,
+
+        workerTerm: msg.workerTerm,
+        workerTermPlural: msg.workerTermPlural,
+        advanceTerm: msg.advanceTerm,
+        itemTerm: msg.itemTerm,
+
+        connectedDevices: msg.connectedDevices,
+      });
+      console.log(
+        `[WS] Paired with Hub: ${msg.businessName} (${msg.tier}) Role: ${ackPayload.role}`
+      );
+
+      // When Hub connection is established, drain any queued offline actions
+      setTimeout(() => {
+        const { onHubReconnect } = require('@/src/services/OfflineSyncService');
+        onHubReconnect();
+      }, 1000); // Short delay to let connection settle
+      break;
+    }
+
+    case 'HEARTBEAT': {
+      // Respond immediately
+      wsSocket?.send(JSON.stringify({
+        type: 'HEARTBEAT_RESPONSE',
+        timestamp: Date.now(),
+      }));
+      store.setStatus({
+        hubOnline: true,
+        lastSeen: new Date().toISOString(),
+        connectedDevices: msg.connectedDevices,
+      });
+      break;
+    }
+
+    case 'PAIRING_REJECTED': {
+      console.error('[WS] Pairing rejected:', msg.reason);
+      store.setStatus({
+        hubOnline: false,
+        syncStatus: 'offline',
+        pairingError: msg.reason,
+      });
+      // Show alert to user
+      if (typeof alert !== 'undefined') {
+        alert(`Cannot connect to Hub:\n\n${msg.reason}`);
+      } else {
+        Alert.alert('Connection Rejected', `Cannot connect to Hub:\n\n${msg.reason}`);
+      }
+      break;
+    }
+
+    case 'DATA_RESPONSE': {
+      // Handled by requestHubData() via one-time message listener
+      break;
+    }
+
+    case 'ERROR': {
+      console.error('[WS] Hub error:', msg.message);
+      break;
+    }
+
+    case 'LOW_STOCK_ALERT': {
+      notifyLowStock({
+        itemName: msg.skuName,
+        currentQty: msg.currentQty,
+        unit: msg.unit,
+        daysUntilStockout: msg.daysUntilStockout || 0,
+      });
+      break;
+    }
+
+    case 'PAYMENT_OVERDUE': {
+      notifyPaymentOverdue({
+        partyName: msg.partyName,
+        amount: msg.amount,
+        currency: store.currency || 'PKR',
+        daysOverdue: msg.daysOverdue || 1,
+      });
+      break;
+    }
+
+    case 'FORESIGHT_ALERT': {
+      if (msg.impact === 'critical' || msg.impact === 'high') {
+        notifyForesight({
+          title: msg.title,
+          detail: msg.detail,
+          impact: msg.impact,
+        });
+      }
+      break;
+    }
+
+    default:
+      console.warn('[WS] Unhandled message:', msg.type);
+  }
+}
+
+// Request data from Hub's SQLite
+export function requestHubData(
+  resource: string,
+  params: Record<string, any> = {}
+): Promise<any[]> {
+  return new Promise((resolve) => {
+    if (!wsSocket || wsSocket.readyState !== WebSocket.OPEN) {
+      resolve([]);
+      return;
+    }
+
+    const requestId = `req_${Date.now().toString(36)}`;
+
+    // 8 second timeout — fall back to empty
+    const timeout = setTimeout(() => {
+      wsSocket?.removeEventListener('message', handler);
+      resolve([]);
+    }, 8000);
+
+    const handler = (event: MessageEvent) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'DATA_RESPONSE' && msg.requestId === requestId) {
+          clearTimeout(timeout);
+          wsSocket?.removeEventListener('message', handler);
+          resolve(msg.data || []);
+        }
+      } catch { /* ignore */ }
+    };
+
+    wsSocket.addEventListener('message', handler);
+    wsSocket.send(JSON.stringify({
+      type: 'DATA_REQUEST',
+      requestId,
+      resource,
+      params,
+    }));
+  });
+}
+
+// Notify Hub that something changed
+export function notifyHub(
+  type: string,
+  data: any = {}
+): void {
+  if (!wsSocket || wsSocket.readyState !== WebSocket.OPEN) {
+    return;
+  }
+  wsSocket.send(JSON.stringify({
+    type,
+    ...data,
+    timestamp: Date.now(),
+  }));
+}
+
+export function getConnectionState():
+  'connected' | 'connecting' | 'disconnected' {
+  if (!wsSocket) return 'disconnected';
+  if (wsSocket.readyState === WebSocket.OPEN)
+    return 'connected';
+  if (wsSocket.readyState === WebSocket.CONNECTING)
+    return 'connecting';
+  return 'disconnected';
+}
+
+export function disconnect(): void {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  if (wsSocket) {
+    try { wsSocket.close(1000, 'User disconnected'); } catch (e) {}
+    wsSocket = null;
+  }
+  reconnectAttempts = 0;
+}

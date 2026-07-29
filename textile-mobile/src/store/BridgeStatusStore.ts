@@ -82,6 +82,13 @@ export interface BridgeStatus {
   canManageKarigars: boolean;
   canAccessApi: boolean;
   
+  // RBAC gates
+  canMarkAttendance: boolean;
+  canLogProduction: boolean;
+  canGivePeshgi: boolean;
+  canViewFinancials: boolean;
+  canViewReports: boolean;
+
   // Owner contact
   ownerPhone: string;
   ownerWhatsApp: string;
@@ -153,6 +160,11 @@ const DEFAULT_STATE = {
   canViewIntelligence: false,
   canManageKarigars: true,
   canAccessApi: false,
+  canMarkAttendance: true,
+  canLogProduction: true,
+  canGivePeshgi: true,
+  canViewFinancials: false,
+  canViewReports: false,
   ownerPhone: '',
   ownerWhatsApp: '',
 };
@@ -337,6 +349,11 @@ export const useBridgeStatus = create<BridgeStatusState>()(
         canViewIntelligence: state.canViewIntelligence,
         canManageKarigars: state.canManageKarigars,
         canAccessApi: state.canAccessApi,
+        canMarkAttendance: state.canMarkAttendance,
+        canLogProduction: state.canLogProduction,
+        canGivePeshgi: state.canGivePeshgi,
+        canViewFinancials: state.canViewFinancials,
+        canViewReports: state.canViewReports,
         ownerPhone: state.ownerPhone,
         ownerWhatsApp: state.ownerWhatsApp,
       }),

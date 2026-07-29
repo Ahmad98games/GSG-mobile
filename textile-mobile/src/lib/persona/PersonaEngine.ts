@@ -89,7 +89,7 @@ class PersonaEngineClass {
 
   private getCurrencySymbol(currency: string): string {
     const symbols: Record<string, string> = {
-      'PKR': 'Rs.',
+      'PKR': 'PKR',
       'INR': '₹',
       'USD': '$',
       'GBP': '£',

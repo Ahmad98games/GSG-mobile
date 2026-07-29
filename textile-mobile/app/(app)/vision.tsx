@@ -6,6 +6,7 @@ import { THEME } from '../../src/constants/theme';
 import { useVisionStore } from '../../src/store/VisionStore';
 import { Eye, AlertTriangle, Activity, Camera } from 'lucide-react-native';
 import Animated, { FadeIn, FadeOut, withRepeat, withSequence, withTiming, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 
 export default function VisionScreen() {
   const { nodes, criticalAlert, subscribeToTelemetry, acknowledgeAlert, fetchTelemetry, isLoading } = useVisionStore();
@@ -43,11 +44,12 @@ export default function VisionScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ 
-        title: 'Vision Feed', 
+        headerShown: false, title: 'Vision Feed', 
         headerStyle: { backgroundColor: THEME.colors.bg }, 
         headerTintColor: 'white',
         headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
       }} />
+      <ScreenHeader title="Vision Feed" showBack={true} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>VISION_SENTINEL</Text>

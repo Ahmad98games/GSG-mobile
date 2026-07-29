@@ -8,6 +8,7 @@ import { useAuthStore } from '../../src/store/AuthStore';
 import { useBridgeStatus } from '../../src/store/BridgeStatusStore';
 import * as Haptics from 'expo-haptics';
 import { FeatureLock } from '../../src/components/tier/FeatureLock';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -49,11 +50,12 @@ export default function CommandScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ 
-        title: 'Command Center', 
+        headerShown: false, title: 'Command Center', 
         headerStyle: { backgroundColor: THEME.colors.bg }, 
         headerTintColor: 'white',
         headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
       }} />
+      <ScreenHeader title="Command Center" showBack={true} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>COMMAND_CENTER</Text>

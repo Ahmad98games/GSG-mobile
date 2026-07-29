@@ -6,6 +6,7 @@ import { useBridgeStatus } from '../../../src/store/BridgeStatusStore';
 import { Ionicons } from '@expo/vector-icons';
 import * as SQLite from 'expo-sqlite';
 import { MessageService } from '../../../src/services/MessageService';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 const db = SQLite.openDatabaseSync('omnora_mesh.db');
 
@@ -65,6 +66,7 @@ export default function ConversationListScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+      <ScreenHeader title="Messages" showBack={true} />
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
         {conversations.reduce((acc, c) => acc + (c.unread_count || 0), 0) > 0 && (

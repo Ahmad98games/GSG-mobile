@@ -18,6 +18,7 @@ import type { KarigarRankItem } from '../../../src/store/LeaderboardStore';
 import { usePersona } from '../../../src/hooks/usePersona';
 import { NspService } from '../../../src/services/NspService';
 import { LucideShare2, LucideAward, LucideTrendingUp, LucideCheckCircle } from 'lucide-react-native';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -111,15 +112,16 @@ const LeaderboardScreen = () => {
     <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: t('leaderboard.title') || 'Floor Efficiency',
-          headerStyle: { backgroundColor: '#000' },
-          headerTintColor: '#fff',
-          headerRight: () => (
-            <TouchableOpacity onPress={handleShare}>
-              <LucideShare2 color="#fff" size={24} />
-            </TouchableOpacity>
-          )
+          headerShown: false,
         }} 
+      />
+      <ScreenHeader 
+        title="Leaderboard" 
+        showBack={true} 
+        rightAction={{
+          label: "Share",
+          onPress: handleShare,
+        }}
       />
 
       <View style={styles.tabs}>

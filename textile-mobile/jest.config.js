@@ -7,4 +7,8 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
   collectCoverage: false,
   verbose: true,
+  moduleNameMapper: {
+    '^@/src/(.*)$': '<rootDir>/src/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
 };

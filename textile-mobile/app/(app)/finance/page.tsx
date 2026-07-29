@@ -8,6 +8,7 @@ import { FinanceDataService } from '../../../src/services/FinanceDataService';
 import { useFinanceStore } from '../../../src/store/FinanceStore';
 import { BridgeStatusBar } from '../../../src/components/shell/BridgeStatusBar';
 import { MobileFeatureGate } from '../../../src/components/MobileFeatureGate';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 /**
  * FINANCE HUB
@@ -61,12 +62,13 @@ export default function FinanceHub() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen 
           options={{ 
-            title: t('FINANCE_HUB'), 
+            headerShown: false, title: t('FINANCE_HUB'), 
             headerStyle: { backgroundColor: THEME.colors.bg }, 
             headerTintColor: 'white',
             headerTitleStyle: { fontWeight: '900' }
           }} 
         />
+      <ScreenHeader title="FINANCE_LEDGER" showBack={true} />
         <BridgeStatusBar />
         
         <FlatList

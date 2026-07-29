@@ -13,6 +13,7 @@ import { useCashflowStore } from '../../../src/store/CashflowStore';
 import { usePersona } from '../../../src/hooks/usePersona';
 import { NspService } from '../../../src/services/NspService';
 import { MobileFeatureGate } from '../../../src/components/MobileFeatureGate';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { 
   LucideTrendingUp, 
   LucideTrendingDown, 
@@ -73,10 +74,11 @@ const AnalyticsScreen = () => {
     <MobileFeatureGate feature="intelligence">
       <View style={styles.container}>
         <Stack.Screen options={{ 
-          title: t('analytics.title') || 'Executive Insights',
+          headerShown: false, title: t('analytics.title') || 'Executive Insights',
           headerStyle: { backgroundColor: '#000' },
           headerTintColor: '#fff' 
         }} />
+      <ScreenHeader title="analytics.title" showBack={true} />
 
       <ScrollView 
         contentContainerStyle={styles.scrollContent}

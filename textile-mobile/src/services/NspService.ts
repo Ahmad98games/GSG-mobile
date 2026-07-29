@@ -98,6 +98,8 @@ export class NspService {
             trialDaysRemaining, workerTerm,
             workerTermPlural, advanceTerm, itemTerm,
             ownerPhone, canAccessApi,
+            canMarkAttendance, canLogProduction,
+            canGivePeshgi, canViewFinancials, canViewReports,
           } = message;
 
           // Update BridgeStatusStore with all hub data
@@ -126,6 +128,11 @@ export class NspService {
             canViewIntelligence:
               ['pro','elite'].includes(tier || ''),
             canAccessApi: canAccessApi !== undefined ? canAccessApi : ['pro', 'elite'].includes(tier || ''),
+            canMarkAttendance: canMarkAttendance !== undefined ? canMarkAttendance : true,
+            canLogProduction: canLogProduction !== undefined ? canLogProduction : true,
+            canGivePeshgi: canGivePeshgi !== undefined ? canGivePeshgi : true,
+            canViewFinancials: canViewFinancials !== undefined ? canViewFinancials : ['pro', 'elite'].includes(tier || ''),
+            canViewReports: canViewReports !== undefined ? canViewReports : ['pro', 'elite'].includes(tier || ''),
           });
 
           // Persist to AsyncStorage for offline use

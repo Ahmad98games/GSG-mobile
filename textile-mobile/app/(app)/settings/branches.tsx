@@ -8,6 +8,7 @@ import { BranchService } from '../../../src/services/BranchService';
 import { useBranchStore } from '../../../src/store/BranchStore';
 import { BridgeStatusBar } from '../../../src/components/shell/BridgeStatusBar';
 import { FeatureLock } from '../../../src/components/tier/FeatureLock';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 /**
  * BRANCH SWITCHER (M6)
@@ -60,12 +61,13 @@ export default function BranchSwitcher() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: t('BRANCH_SWITCHER'), 
+          headerShown: false, title: t('BRANCH_SWITCHER'), 
           headerStyle: { backgroundColor: THEME.colors.bg }, 
           headerTintColor: 'white',
           headerTitleStyle: { fontWeight: '900' }
         }} 
       />
+      <ScreenHeader title="BRANCH_SWITCHER" showBack={true} />
       <BridgeStatusBar />
 
       <FeatureLock feature="multiLocation" requiredTier="elite">

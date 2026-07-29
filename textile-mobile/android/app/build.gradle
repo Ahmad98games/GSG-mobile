@@ -1,8 +1,16 @@
+if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+    buildDir = new File("C:\\mobile system manager\\b\\app")
+    layout.buildDirectory.set(new File("C:\\mobile system manager\\b\\app"))
+}
+
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
+println "DEBUG: app build.gradle buildDir is: " + buildDir
+println "DEBUG: app build.gradle project.buildDir is: " + project.buildDir
+println "DEBUG: app build.gradle layout.buildDirectory is: " + project.layout.buildDirectory.get().asFile
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -83,6 +91,14 @@ def jscFlavor = 'org.webkit:android-jsc:+'
 android {
     ndkVersion rootProject.ext.ndkVersion
 
+    // Ensure the autolinking-generated PackageList.java is on the Kotlin compile classpath
+    sourceSets {
+        main {
+            java.srcDirs += ["${buildDir}/generated/autolinking/src/main/java"]
+        }
+    }
+
+
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
@@ -101,6 +117,12 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            storeFile file('noxis-release-key.jks')
+            storePassword 'noxis123'
+            keyAlias 'noxis-key-alias'
+            keyPassword 'noxis123'
+        }
     }
     buildTypes {
         debug {
@@ -109,7 +131,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"

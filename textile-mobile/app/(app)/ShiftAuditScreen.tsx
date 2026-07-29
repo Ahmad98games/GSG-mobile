@@ -16,6 +16,7 @@ import { tcpService } from '../../src/services/TCPClientService';
 import { useVocabulary } from '../../src/store/VocabularyContext';
 import { useConnection } from '../../src/store/ConnectionContext';
 import { IndustrialSyncIndicator } from '../../src/components/IndustrialSyncIndicator';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 
 const COLORS = {
   bg: '#09090b',
@@ -110,10 +111,7 @@ export default function ShiftAuditScreen() {
     <View style={styles.container}>
       <IndustrialSyncIndicator />
 
-      <View style={styles.header}>
-        <Text style={styles.title}>{getLabel('unit').toUpperCase()} AUDIT</Text>
-        <Text style={styles.subtitle}>VERIFY {getLabel('bulk').toUpperCase()} DATA BEFORE CLOCK-OUT</Text>
-      </View>
+      <ScreenHeader title={`${getLabel('unit').toUpperCase()} AUDIT`} subtitle={`VERIFY ${getLabel('bulk').toUpperCase()} DATA BEFORE CLOCK-OUT`} showBack={true} />
 
       <FlatList
         data={history}

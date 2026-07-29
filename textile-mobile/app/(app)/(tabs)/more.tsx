@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { THEME } from '../../../src/constants/theme';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { 
   Factory, 
   Users, 
@@ -45,6 +46,7 @@ export default function MoreMenuScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'MORE_FEATURES', headerShown: false }} />
+      <ScreenHeader title="MORE_FEATURES" showBack={true} />
       
       <View style={styles.header}>
         <Text style={styles.title}>COMMAND_EXPANSION</Text>

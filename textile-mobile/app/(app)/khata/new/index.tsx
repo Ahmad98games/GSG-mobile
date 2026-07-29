@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { VoiceCommandProcessor } from '../../../../src/lib/audio/VoiceCommandProcessor';
 import { meshBus } from '../../../../src/services/MeshEventBus';
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 
 export default function NewKhataEntryScreen() {
   const router = useRouter();
@@ -57,7 +58,8 @@ export default function NewKhataEntryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: 'Quick Khata', headerStyle: { backgroundColor: '#121417' }, headerTintColor: 'white' }} />
+      <Stack.Screen options={{ headerShown: false, title: 'Quick Khata', headerStyle: { backgroundColor: '#121417' }, headerTintColor: 'white' }} />
+      <ScreenHeader title="Quick Khata" showBack={true} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.card}>

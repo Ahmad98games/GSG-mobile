@@ -1,6 +1,6 @@
 import * as Battery from 'expo-battery';
 import * as Brightness from 'expo-brightness';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { Heartbeat } from './HeartbeatService';
 
 /**
@@ -18,6 +18,8 @@ class EnergyShieldService {
   }
 
   private async init() {
+    if (Platform.OS === 'web') return;
+
     // 1. Set original brightness to current
     const { status } = await Brightness.requestPermissionsAsync();
     if (status === 'granted') {
@@ -50,6 +52,7 @@ class EnergyShieldService {
    * Should be called on user interaction
    */
   public async resetIdleTimer() {
+    if (Platform.OS === 'web') return;
     if (this.idleTimer) clearTimeout(this.idleTimer);
     
     // Restore brightness if dimmed
@@ -62,6 +65,7 @@ class EnergyShieldService {
   }
 
   private async dimScreen() {
+    if (Platform.OS === 'web') return;
     try {
       const { status } = await Brightness.requestPermissionsAsync();
       if (status === 'granted') {

@@ -12,6 +12,7 @@ import { tcpService } from '../../../src/services/TCPClientService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { formatCurrency } from '../../../src/lib/currency/formatCurrency';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 export default function ScanIndexWebScreen() {
   const [loading, setLoading] = useState(false);
@@ -44,10 +45,11 @@ export default function ScanIndexWebScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{
-        title: 'Stock Scanner',
+        headerShown: false, title: 'Stock Scanner',
         headerStyle: { backgroundColor: '#121417' },
         headerTintColor: 'white',
       }} />
+      <ScreenHeader title="Stock Scanner" showBack={true} />
 
       {isScanning ? (
         <View style={styles.scanArea}>

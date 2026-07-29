@@ -1,199 +1,611 @@
-import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FinanceDataService } from '../../../src/services/FinanceDataService';
-import { formatCurrency } from '../../../src/lib/currency/formatCurrency';
-import { THEME } from '../../../src/constants/theme';
+'use client'
+import React, { useState, useCallback,
+  useEffect, memo }
+  from 'react'
+import {
+  View, Text, StyleSheet,
+  FlatList, TextInput, TouchableOpacity,
+  RefreshControl,
+} from 'react-native'
+import { router } from 'expo-router'
+import * as Haptics from 'expo-haptics'
+import { supabase }
+  from '@/lib/supabase'
+import { useBridgeStatusStore }
+  from '@/stores/BridgeStatusStore'
+import { useIndustryConfig }
+  from '@/hooks/useIndustryConfig'
+import { ScreenContainer }
+  from '@/components/ui/ScreenContainer'
+import { ScreenHeader }
+  from '@/components/navigation/ScreenHeader'
+import { EmptyState }
+  from '@/components/ui/EmptyState'
+import { SkeletonRow }
+  from '@/components/ui/SkeletonRow'
 
-const GOLD = '#C6A756';
-const RED = '#C44B4B';
-const BG = '#0A0A0A';
-const CARD = '#111111';
-const BORDER = '#1F1F1F';
+interface Karigar {
+  id: string
+  karigar_code: string
+  name: string
+  phone: string | null
+  wage_type: 'piece_rate' | 'daily' | 'monthly'
+  piece_rate: number | null
+  daily_rate: number | null
+  monthly_salary: number | null
+  peshgi_balance: number
+  status: string
+  grade: string | null
+  today_status?: 'present' | 'absent' | 'half' | null
+  today_units?: number
+}
 
-export default function KarigarsList() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
+// Memoized row component for performance
+const KarigarRow = memo(function KarigarRow({
+  karigar,
+  onPress,
+  currency,
+}: {
+  karigar: Karigar
+  onPress: () => void
+  currency: string
+}) {
+  const fmt = (n: number) =>
+    `${currency} ${n.toLocaleString('en-PK')}`
 
-  const { data: karigars, isLoading, isRefetching, refetch } = useQuery({
-    queryKey: ['karigars-list'],
-    queryFn: async () => {
-      const res = await FinanceDataService.fetchKarigars();
-      return res.karigars || [];
-    }
-  });
-
-  const filteredKarigars = useMemo(() => {
-    if (!karigars) return [];
-    if (!search.trim()) return karigars;
-    const query = search.toLowerCase();
-    return karigars.filter((k: any) =>
-      (k.name || '').toLowerCase().includes(query) ||
-      (k.code || k.karigar_code || '').toLowerCase().includes(query)
-    );
-  }, [karigars, search]);
-
-  const handleRefresh = async () => {
-    await refetch();
-  };
-
-  const renderKarigarItem = ({ item }: { item: any }) => {
-    return (
-      <TouchableOpacity
-        style={styles.card}
-        activeOpacity={0.7}
-        onPress={() => router.push({ pathname: '/(app)/karigars/[id]', params: { id: item.id } })}
-      >
-        <View style={styles.cardHeader}>
-          <View>
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.code}>{item.code || `K-${item.id.slice(0, 4).toUpperCase()}`}</Text>
-          </View>
-          <View style={styles.balanceContainer}>
-            <Text style={styles.balanceLabel}>OUTSTANDING</Text>
-            <Text style={[styles.balanceValue, { color: item.balance > 0 ? GOLD : '#10B981' }]}>
-              {formatCurrency(item.balance || 0)}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.cardFooter}>
-          <View style={styles.statusBadge}>
-            <View style={[styles.statusDot, { backgroundColor: '#10B981' }]} />
-            <Text style={styles.statusText}>ACTIVE</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color="#666" />
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator color={GOLD} size="large" />
-      </View>
-    );
+  const ATTENDANCE_COLOR = {
+    present: '#10B981',
+    half: '#F59E0B',
+    absent: '#EF4444',
   }
 
-  return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ 
-        title: 'Karigars', 
-        headerStyle: { backgroundColor: BG }, 
-        headerTintColor: 'white',
-        headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 14 }
-      }} />
+  const statusColor = karigar.today_status
+    ? ATTENDANCE_COLOR[karigar.today_status] || '#374151'
+    : '#374151'
 
-      {/* Search Input Bar */}
+  const wageDisplay = karigar.wage_type === 'piece_rate'
+    ? `${fmt(karigar.piece_rate || 0)}/pc`
+    : karigar.wage_type === 'daily'
+    ? `${fmt(karigar.daily_rate || 0)}/day`
+    : `${fmt(karigar.monthly_salary || 0)}/mo`
+
+  return (
+    <TouchableOpacity
+      style={styles.row}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {/* Status indicator */}
+      <View style={[
+        styles.statusDot,
+        { backgroundColor: statusColor }
+      ]} />
+
+      {/* Main info */}
+      <View style={styles.rowMain}>
+        <View style={styles.rowTop}>
+          <Text style={styles.karigarName}
+            numberOfLines={1}>
+            {karigar.name}
+          </Text>
+          <Text style={styles.karigarCode}>
+            {karigar.karigar_code}
+          </Text>
+        </View>
+        <View style={styles.rowBottom}>
+          <Text style={styles.wageText}>
+            {wageDisplay}
+          </Text>
+          {karigar.peshgi_balance > 0 && (
+            <View style={styles.peshgiBadge}>
+              <Text style={styles.peshgiText}>
+                P: {fmt(karigar.peshgi_balance)}
+              </Text>
+            </View>
+          )}
+          {karigar.today_units !== undefined &&
+            karigar.today_units > 0 && (
+            <Text style={styles.unitsText}>
+              {karigar.today_units} units today
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {/* Attendance badge */}
+      {karigar.today_status && (
+        <View style={[
+          styles.attendanceBadge,
+          { backgroundColor: statusColor + '20',
+            borderColor: statusColor + '50' }
+        ]}>
+          <Text style={[
+            styles.attendanceText,
+            { color: statusColor }
+          ]}>
+            {karigar.today_status === 'present'
+              ? 'P' : karigar.today_status === 'half'
+              ? 'H' : 'A'}
+          </Text>
+        </View>
+      )}
+
+      {/* Chevron */}
+      <Text style={styles.chevron}>›</Text>
+    </TouchableOpacity>
+  )
+}, (prev, next) =>
+  prev.karigar.id === next.karigar.id &&
+  prev.karigar.today_status === next.karigar.today_status &&
+  prev.karigar.peshgi_balance === next.karigar.peshgi_balance &&
+  prev.karigar.today_units === next.karigar.today_units
+)
+
+export default function KarigarsScreen() {
+  const { businessId, currency } =
+    useBridgeStatusStore()
+  const { t, features } = useIndustryConfig()
+
+  const [karigars, setKarigars] =
+    useState<Karigar[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] =
+    useState(false)
+  const [error, setError] =
+    useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] =
+    useState<'all' | 'present' | 'absent' | 'no-attendance'>('all')
+
+  const today = new Date()
+    .toISOString().split('T')[0]
+
+  const loadKarigars = useCallback(async (
+    isRefresh = false
+  ) => {
+    if (!businessId) return
+    if (!isRefresh) setLoading(true)
+    setError(null)
+
+    try {
+      // Load karigars and today's attendance
+      // in parallel
+      const [karigarRes, attendanceRes,
+        productionRes] = await Promise.all([
+        supabase
+          .from('karigars')
+          .select('*')
+          .eq('business_id', businessId)
+          .eq('status', 'active')
+          .order('name'),
+
+        supabase
+          .from('attendance_logs')
+          .select('karigar_id, status')
+          .eq('business_id', businessId)
+          .eq('attendance_date', today),
+
+        supabase
+          .from('karigar_production_logs')
+          .select('karigar_id, units_produced')
+          .eq('business_id', businessId)
+          .eq('log_date', today),
+      ])
+
+      const attendanceMap = new Map(
+        (attendanceRes.data || []).map(
+          a => [a.karigar_id, a.status]
+        )
+      )
+
+      const productionMap = new Map(
+        (productionRes.data || []).reduce(
+          (acc, p) => {
+            const current = acc.get(
+              p.karigar_id
+            ) || 0
+            acc.set(
+              p.karigar_id,
+              current + (p.units_produced || 0)
+            )
+            return acc
+          },
+          new Map<string, number>()
+        )
+      )
+
+      const enriched = (karigarRes.data || [])
+        .map(k => ({
+          ...k,
+          today_status: attendanceMap.get(k.id)
+            || null,
+          today_units: productionMap.get(k.id)
+            || 0,
+        }))
+
+      setKarigars(enriched)
+    } catch (err: any) {
+      setError(
+        'Could not load workers. ' +
+        'Check your connection.'
+      )
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [businessId, today])
+
+  useEffect(() => {
+    loadKarigars()
+  }, [loadKarigars])
+
+  const filtered = karigars.filter(k => {
+    const matchesSearch = !search ||
+      k.name.toLowerCase().includes(
+        search.toLowerCase()
+      ) ||
+      k.karigar_code.toLowerCase().includes(
+        search.toLowerCase()
+      )
+
+    const matchesFilter =
+      filter === 'all' ||
+      (filter === 'present' &&
+        k.today_status === 'present') ||
+      (filter === 'absent' &&
+        k.today_status === 'absent') ||
+      (filter === 'no-attendance' &&
+        !k.today_status)
+
+    return matchesSearch && matchesFilter
+  })
+
+  const presentCount = karigars.filter(
+    k => k.today_status === 'present'
+  ).length
+  const absentCount = karigars.filter(
+    k => k.today_status === 'absent'
+  ).length
+  const noAttendanceCount = karigars.filter(
+    k => !k.today_status
+  ).length
+
+  const renderItem = useCallback(
+    ({ item }: { item: Karigar }) => (
+      <KarigarRow
+        karigar={item}
+        currency={currency || 'PKR'}
+        onPress={() => {
+          Haptics.impactAsync(
+            Haptics.ImpactFeedbackStyle.Light
+          )
+          router.push(
+            `/(app)/karigars/${item.id}`
+          )
+        }}
+      />
+    ),
+    [currency]
+  )
+
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: 72,
+      offset: 72 * index,
+      index,
+    }),
+    []
+  )
+
+  return (
+    <ScreenContainer>
+      <ScreenHeader
+        title={t.workers}
+        subtitle={`${karigars.length} active · ${presentCount} present`}
+      />
+
+      {/* Summary bar */}
+      {karigars.length > 0 && (
+        <View style={styles.summaryBar}>
+          {[
+            {
+              label: 'Present',
+              count: presentCount,
+              color: '#10B981',
+              filterVal: 'present' as const,
+            },
+            {
+              label: 'Absent',
+              count: absentCount,
+              color: '#EF4444',
+              filterVal: 'absent' as const,
+            },
+            {
+              label: 'Unmarked',
+              count: noAttendanceCount,
+              color: '#374151',
+              filterVal: 'no-attendance' as const,
+            },
+            {
+              label: 'All',
+              count: karigars.length,
+              color: '#60A5FA',
+              filterVal: 'all' as const,
+            },
+          ].map(item => (
+            <TouchableOpacity
+              key={item.filterVal}
+              style={[
+                styles.summaryCard,
+                filter === item.filterVal && {
+                  borderColor: item.color + '60',
+                  backgroundColor: item.color + '15',
+                }
+              ]}
+              onPress={() => {
+                setFilter(item.filterVal)
+                Haptics.impactAsync(
+                  Haptics.ImpactFeedbackStyle.Light
+                )
+              }}
+            >
+              <Text style={[
+                styles.summaryCount,
+                { color: filter === item.filterVal
+                    ? item.color
+                    : '#6B7280' }
+              ]}>
+                {item.count}
+              </Text>
+              <Text style={styles.summaryLabel}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Search */}
       <View style={styles.searchContainer}>
-        <Ionicons name="search" size={18} color="#666" style={styles.searchIcon} />
+        <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
+          style={styles.searchInput}
           value={search}
           onChangeText={setSearch}
-          placeholder="Search by name or code..."
-          placeholderTextColor="#666"
-          style={styles.searchInput}
+          placeholder={`Search ${t.workers}...`}
+          placeholderTextColor="#374151"
+          returnKeyType="search"
         />
         {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color="#666" />
+          <TouchableOpacity
+            onPress={() => setSearch('')}
+          >
+            <Text style={styles.clearSearch}>×</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      <FlatList
-        data={filteredKarigars}
-        keyExtractor={(item) => item.id}
-        renderItem={renderKarigarItem}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={handleRefresh}
-            tintColor={GOLD}
-          />
-        }
-        initialNumToRender={15}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews={true}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={48} color="#444" />
-            <Text style={styles.emptyText}>No Karigars found in registry</Text>
-          </View>
-        )}
-      />
-    </View>
-  );
+      {/* List */}
+      {loading ? (
+        <SkeletonRow lines={8} height={72} />
+      ) : error ? (
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>
+            {error}
+          </Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            onPress={() => loadKarigars()}
+          >
+            <Text style={styles.retryText}>
+              Try Again
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon="👷"
+          title={
+            search
+              ? `No ${t.workers} match "${search}"`
+              : filter !== 'all'
+              ? `No ${t.workers} in this category`
+              : `No active ${t.workers}`
+          }
+          description={
+            !search && filter === 'all'
+              ? `Add ${t.workers} in Noxis Hub on your factory PC first.`
+              : undefined
+          }
+        />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          getItemLayout={getItemLayout}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true)
+                loadKarigars(true)
+              }}
+              tintColor="#60A5FA"
+            />
+          }
+          contentContainerStyle={
+            styles.listContent
+          }
+        />
+      )}
+    </ScreenContainer>
+  )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: BG },
-  centered: { justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 16, paddingBottom: 40 },
-  card: {
-    backgroundColor: CARD,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardHeader: {
+  summaryBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
-  name: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  code: { color: GOLD, fontSize: 10, fontWeight: '900', marginTop: 4, letterSpacing: 1 },
-  balanceContainer: { alignItems: 'flex-end' },
-  balanceLabel: { color: '#666', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  balanceValue: { fontSize: 14, fontWeight: '700', marginTop: 4, fontFamily: 'JetBrains Mono' },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  summaryCard: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-    paddingTop: 12,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#0F1114',
   },
-  statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
-  statusText: { color: '#10B981', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  emptyContainer: { padding: 40, alignItems: 'center', justifyContent: 'center', marginTop: 80 },
-  emptyText: { color: '#666', fontSize: 14, marginTop: 12, fontFamily: 'JetBrains Mono' },
+  summaryCount: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: 'monospace',
+  },
+  summaryLabel: {
+    fontSize: 9,
+    color: '#6B7280',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: CARD,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#0F1114',
     marginHorizontal: 16,
-    marginTop: 16,
+    marginVertical: 10,
     paddingHorizontal: 12,
-    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    height: 44,
     gap: 8,
   },
   searchIcon: {
-    marginRight: 4,
+    fontSize: 14,
   },
   searchInput: {
     flex: 1,
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 14,
-    fontFamily: 'JetBrains Mono',
   },
-});
+  clearSearch: {
+    color: '#6B7280',
+    fontSize: 18,
+    paddingHorizontal: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.04)',
+    height: 72,
+    gap: 10,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+  rowMain: {
+    flex: 1,
+    gap: 4,
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  karigarName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    flex: 1,
+  },
+  karigarCode: {
+    fontSize: 10,
+    color: '#4B5563',
+    fontFamily: 'monospace',
+  },
+  rowBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  wageText: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  peshgiBadge: {
+    backgroundColor: 'rgba(197,160,89,0.15)',
+    borderRadius: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  peshgiText: {
+    fontSize: 9,
+    color: '#C5A059',
+    fontWeight: '600',
+  },
+  unitsText: {
+    fontSize: 10,
+    color: '#60A5FA',
+  },
+  attendanceBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  attendanceText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  chevron: {
+    color: '#374151',
+    fontSize: 20,
+    flexShrink: 0,
+  },
+  listContent: {
+    paddingBottom: 100,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  errorText: {
+    color: '#6B7280',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#9CA3AF',
+    fontSize: 14,
+  },
+})

@@ -15,6 +15,7 @@ import { tcpService } from '../../src/services/TCPClientService';
 import { CustomNumpad } from '../../src/components/CustomNumpad';
 import { IndustrialSyncIndicator } from '../../src/components/IndustrialSyncIndicator';
 import { Stack } from 'expo-router';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 
 const COLORS = {
   bg: '#09090b',
@@ -107,7 +108,8 @@ export default function WorkerActionScreen() {
 
   return (
     <Animated.View style={[styles.container, { backgroundColor }]}>
-      <Stack.Screen options={{ title: 'Mark Attendance' }} />
+      <Stack.Screen options={{ headerShown: false, title: 'Mark Attendance' }} />
+      <ScreenHeader title="Mark Attendance" showBack={true} />
       <IndustrialSyncIndicator />
 
       <View style={styles.content}>

@@ -1,16 +1,23 @@
-import React, { useState } from 'react';
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Modal, FlatList, SafeAreaView } from 'react-native';
 import { Stack } from 'expo-router';
 import { Clock, Globe, ShieldAlert, Play, ChevronRight, Info } from 'lucide-react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEME } from '../../../src/constants/theme';
 import { usePersona } from '../../../src/hooks/usePersona';
 import { useQuietHoursStore } from '../../../src/stores/QuietHoursStore';
 import { notificationService } from '../../../src/lib/notifications/NotificationService';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
+import { scheduleAttendanceReminder, cancelAllScheduled } from '../../../src/services/NotificationService';
 
 const TIMEZONES = [
   'Asia/Karachi', 'Asia/Dubai', 'UTC', 'Europe/London', 'America/New_York', 'Asia/Singapore'
 ];
+
+const NOTIF_PREFS_KEY = 'noxis_notif_prefs';
 
 export default function NotificationSettings() {
   const { t } = usePersona();
@@ -25,6 +32,36 @@ export default function NotificationSettings() {
   const isQuietHoursActive = useQuietHoursStore(s => s.isQuietHoursActive);
 
   const [tzModalVisible, setTzModalVisible] = useState(false);
+  const [prefs, setPrefs] = useState({
+    attendance_reminder: true,
+    low_stock: true,
+    payment_overdue: true,
+    foresight: true,
+  });
+
+  useEffect(() => {
+    const loadPrefs = async () => {
+      const stored = await AsyncStorage.getItem(NOTIF_PREFS_KEY);
+      if (stored) {
+        setPrefs(JSON.parse(stored));
+      }
+    };
+    loadPrefs();
+  }, []);
+
+  const savePrefs = async (key: string, value: boolean) => {
+    const updated = { ...prefs, [key]: value };
+    setPrefs(updated);
+    await AsyncStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(updated));
+
+    if (key === 'attendance_reminder') {
+      if (value) {
+        await scheduleAttendanceReminder();
+      } else {
+        await cancelAllScheduled();
+      }
+    }
+  };
 
   const disabledOverlayStyle = useAnimatedStyle(() => ({
     opacity: withSpring(enabled ? 1 : 0.4, { stiffness: 250, damping: 30 }),
@@ -42,15 +79,80 @@ export default function NotificationSettings() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: t('notifications.quiet_hours_label'), headerStyle: { backgroundColor: THEME.colors.bg }, headerTintColor: '#fff' }} />
+      <Stack.Screen options={{ headerShown: false, title: t('notifications.quiet_hours_label') || 'Notification Preferences', headerStyle: { backgroundColor: THEME.colors.bg }, headerTintColor: '#fff' }} />
+      <ScreenHeader title="Notification Preferences" showBack={true} />
       
       <ScrollView contentContainerStyle={styles.content}>
-        {/* SECTION 1: MASTER TOGGLE */}
+        {/* SECTION: CHANNEL PREFERENCES */}
         <View style={styles.section}>
+          <Text style={styles.sectionHeader}>NOTIFICATION CHANNELS</Text>
+          
+          <View style={styles.row}>
+            <View style={styles.rowLeft}>
+              <Clock size={18} color="#60A5FA" />
+              <Text style={styles.rowLabel}>Attendance Reminder (9 AM)</Text>
+            </View>
+            <Switch
+              value={prefs.attendance_reminder}
+              onValueChange={(v) => savePrefs('attendance_reminder', v)}
+              trackColor={{ false: THEME.colors.border, true: '#60A5FA' }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.row}>
+            <View style={styles.rowLeft}>
+              <ShieldAlert size={18} color="#F59E0B" />
+              <Text style={styles.rowLabel}>Low Stock Alerts</Text>
+            </View>
+            <Switch
+              value={prefs.low_stock}
+              onValueChange={(v) => savePrefs('low_stock', v)}
+              trackColor={{ false: THEME.colors.border, true: '#60A5FA' }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.row}>
+            <View style={styles.rowLeft}>
+              <ShieldAlert size={18} color="#EF4444" />
+              <Text style={styles.rowLabel}>Payment Overdue Alerts</Text>
+            </View>
+            <Switch
+              value={prefs.payment_overdue}
+              onValueChange={(v) => savePrefs('payment_overdue', v)}
+              trackColor={{ false: THEME.colors.border, true: '#60A5FA' }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.row}>
+            <View style={styles.rowLeft}>
+              <ShieldAlert size={18} color="#10B981" />
+              <Text style={styles.rowLabel}>Foresight Critical Alerts</Text>
+            </View>
+            <Switch
+              value={prefs.foresight}
+              onValueChange={(v) => savePrefs('foresight', v)}
+              trackColor={{ false: THEME.colors.border, true: '#60A5FA' }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
+
+        {/* SECTION 1: MASTER TOGGLE (Quiet Hours) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>QUIET HOURS POLICY</Text>
           <View style={styles.row}>
             <View style={styles.rowLeft}>
               <Clock size={20} color={THEME.colors.blue} />
-              <Text style={styles.rowLabel}>{t('notifications.quiet_hours_label')}</Text>
+              <Text style={styles.rowLabel}>{t('notifications.quiet_hours_label') || 'Enable Quiet Hours'}</Text>
             </View>
             <Switch 
               value={enabled} 
@@ -64,14 +166,14 @@ export default function NotificationSettings() {
         {/* SECTION 2: TIME RANGE */}
         <Animated.View style={[styles.section, disabledOverlayStyle]} pointerEvents={enabled ? 'auto' : 'none'}>
           <TouchableOpacity style={styles.row}>
-            <Text style={styles.subLabel}>{t('notifications.from_time')}</Text>
+            <Text style={styles.subLabel}>{t('notifications.from_time') || 'Start Time'}</Text>
             <Text style={styles.timeValue}>{formatTime(startHour, startMinute)}</Text>
           </TouchableOpacity>
           
           <View style={styles.divider} />
           
           <TouchableOpacity style={styles.row}>
-            <Text style={styles.subLabel}>{t('notifications.to_time')}</Text>
+            <Text style={styles.subLabel}>{t('notifications.to_time') || 'End Time'}</Text>
             <Text style={styles.timeValue}>{formatTime(endHour, endMinute)}</Text>
           </TouchableOpacity>
 
@@ -85,7 +187,7 @@ export default function NotificationSettings() {
           <TouchableOpacity style={styles.row} onPress={() => setTzModalVisible(true)}>
             <View style={styles.rowLeft}>
               <Globe size={20} color={THEME.colors.textSecondary} />
-              <Text style={styles.rowLabel}>{t('notifications.timezone_label')}</Text>
+              <Text style={styles.rowLabel}>{t('notifications.timezone_label') || 'Timezone'}</Text>
             </View>
             <View style={styles.rowRight}>
               <Text style={styles.monoValue}>{timezone}</Text>
@@ -98,7 +200,7 @@ export default function NotificationSettings() {
         <View style={styles.infoBox}>
           <Info size={18} color="#F59E0B" />
           <Text style={styles.infoText}>
-            {t('notifications.critical_always_delivered')}
+            {t('notifications.critical_always_delivered') || 'Critical alerts will bypass quiet hours policies.'}
           </Text>
         </View>
 
@@ -106,12 +208,12 @@ export default function NotificationSettings() {
         <View style={styles.testSection}>
           <TouchableOpacity style={styles.testBtn} onPress={handleSendTest}>
             <Play size={16} color="black" fill="black" />
-            <Text style={styles.testBtnText}>{t('notifications.send_test').toUpperCase()}</Text>
+            <Text style={styles.testBtnText}>{(t('notifications.send_test') || 'Send Test Alert').toUpperCase()}</Text>
           </TouchableOpacity>
           
           {quietActive && (
             <Text style={styles.suppressedNote}>
-              {t('notifications.test_suppressed_note')}
+              {t('notifications.test_suppressed_note') || 'Quiet hours active: Non-critical alerts are suppressed.'}
             </Text>
           )}
         </View>
@@ -160,6 +262,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.border,
   },
+  sectionHeader: {
+    color: THEME.colors.textSecondary,
+    fontFamily: THEME.fonts.monoBold,
+    fontSize: 10,
+    letterSpacing: 1.5,
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -170,6 +280,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
   rowRight: {
     flexDirection: 'row',
@@ -178,8 +289,8 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     color: THEME.colors.textPrimary,
-    fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
   },
   subLabel: {
     color: THEME.colors.textSecondary,
@@ -187,7 +298,6 @@ const styles = StyleSheet.create({
   },
   timeValue: {
     color: THEME.colors.gold,
-    fontFamily: THEME.colors.gold, // Mocking font using color logic as reference
     fontSize: 18,
     fontWeight: 'bold',
   },

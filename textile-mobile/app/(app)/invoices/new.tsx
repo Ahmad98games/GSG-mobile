@@ -42,6 +42,7 @@ import { queueManager } from '../../../src/services/OfflineQueueManager';
 import { useBridgeStatus } from '../../../src/store/BridgeStatusStore';
 import { formatCurrency } from '../../../src/lib/currency/formatCurrency';
 import * as Haptics from 'expo-haptics';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -197,11 +198,12 @@ export default function NewInvoiceScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ 
-        title: step === 1 ? 'SELECT PARTY' : step === 2 ? 'ADD ITEMS' : 'PAYMENT',
+        headerShown: false, title: step === 1 ? 'SELECT PARTY' : step === 2 ? 'ADD ITEMS' : 'PAYMENT',
         headerStyle: { backgroundColor: THEME.colors.bg },
         headerTintColor: THEME.colors.textPrimary,
         headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 14 },
       }} />
+      <ScreenHeader title="New" showBack={true} />
 
       {/* STEP INDICATOR */}
       <View style={styles.stepIndicator}>

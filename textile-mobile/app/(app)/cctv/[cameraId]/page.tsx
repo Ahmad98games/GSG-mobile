@@ -8,6 +8,7 @@ import { usePersona } from '../../../../src/hooks/usePersona';
 import { CctvDataService } from '../../../../src/services/CctvDataService';
 import { BridgeStatusBar } from '../../../../src/components/shell/BridgeStatusBar';
 import { formatDistanceToNow } from 'date-fns';
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 
 /**
  * CAMERA DETAIL (M7)
@@ -73,12 +74,13 @@ export default function CameraDetail() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: camera?.label || t('CAMERA_DETAIL'), 
+          headerShown: false, title: camera?.label || t('CAMERA_DETAIL'), 
           headerStyle: { backgroundColor: THEME.colors.bg }, 
           headerTintColor: 'white',
           headerTitleStyle: { fontWeight: '900' }
         }} 
       />
+      <ScreenHeader title="Page" showBack={true} />
       <BridgeStatusBar />
 
       {camera && (

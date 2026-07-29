@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -8,22 +8,25 @@ import {
   TouchableOpacity, 
   TextInput, 
   ScrollView, 
-  FlatList,
   Platform,
   KeyboardAvoidingView,
-  ActivityIndicator
+  Alert
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSafeStorage } from '../../../src/utils/storage';
 import { usePersona } from '../../../src/hooks/usePersona';
-import { NspService } from '../../../src/services/NspService';
-import { queueManager } from '../../../src/services/OfflineQueueManager';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
+import { ScreenContainer } from '../../../src/components/ui/ScreenContainer';
+import { SuccessOverlay } from '../../../src/components/ui/SuccessOverlay';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { useBridgeStatus } from '../../../src/store/BridgeStatusStore';
 import { useAuthStore } from '../../../src/store/AuthStore';
 import { supabase } from '../../../src/lib/supabase';
 import { THEME } from '../../../src/constants/theme';
+import { useIndustryConfig } from '../../../src/hooks/useIndustryConfig';
+import { writeWithSync } from '../../../src/services/OfflineSyncService';
 import { 
   LucidePlus, 
   LucideMinus, 
@@ -34,32 +37,56 @@ import {
 } from 'lucide-react-native';
 
 const DEPARTMENTS = ['Cutting', 'Stitching', 'Finishing', 'Packing'];
+
 const GRADES = [
-  { id: 'A', label: 'Grade A', color: '#10B981' },
-  { id: 'B', label: 'Grade B', color: '#60A5FA' },
-  { id: 'C', label: 'Grade C', color: '#F59E0B' },
-  { id: 'R', label: 'Rejected', color: '#EF4444' },
+  { value: 'A', color: '#10B981' },
+  { value: 'B', color: '#60A5FA' },
+  { value: 'C', color: '#F59E0B' },
+  { value: 'Rejected', color: '#EF4444' },
 ];
 
 export default function QuickLogScreen() {
   const router = useRouter();
   const { t } = usePersona();
-  const { workerTerm, currency } = useBridgeStatus();
+  const { canLogProduction } = useBridgeStatus();
+  const tConfig = useIndustryConfig();
+  const workerTerm = tConfig.worker;
+  const currency = tConfig.currency;
+  const fmt = tConfig.fmt;
+
+  if (!canLogProduction) {
+    return (
+      <ScreenContainer style={{ flex: 1 }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ScreenHeader title={`${tConfig.production} Log`} showBack={true} />
+        <EmptyState
+          icon="🔒"
+          title="Access Denied"
+          description={`You do not have permission to log ${tConfig.production.toLowerCase()}. Please contact your factory administrator.`}
+        />
+      </ScreenContainer>
+    );
+  }
   
   const [karigarSearch, setKarigarSearch] = useState('');
   const [allKarigars, setAllKarigars] = useState<any[]>([]);
   const [filteredKarigars, setFilteredKarigars] = useState<any[]>([]);
   const [selectedKarigar, setSelectedKarigar] = useState<any>(null);
   const [recentKarigars, setRecentKarigars] = useState<any[]>([]);
-  const [qty, setQty] = useState(1);
+  const [units, setUnits] = useState('1');
   const [grade, setGrade] = useState('A');
   const [department, setDepartment] = useState(DEPARTMENTS[1]); // Default Stitching
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [todaySummary, setTodaySummary] = useState({ total: 0, a: 0, b: 0, c: 0, rejected: 0 });
+
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     loadRecentKarigars();
     loadAllKarigars();
+    loadTodaySummary();
   }, []);
 
   useEffect(() => {
@@ -70,7 +97,7 @@ export default function QuickLogScreen() {
     const query = karigarSearch.toLowerCase();
     const matches = allKarigars.filter(k => 
       k.name.toLowerCase().includes(query) || 
-      (k.karigar_code || '').toLowerCase().includes(query)
+      (k.karigar_code || k.code || '').toLowerCase().includes(query)
     );
     setFilteredKarigars(matches);
   }, [karigarSearch, allKarigars]);
@@ -94,25 +121,83 @@ export default function QuickLogScreen() {
       }
       if (!profileId) return;
 
-      const { data, error } = await supabase
-        .from('karigars')
-        .select('*')
-        .eq('business_id', profileId)
-        .eq('status', 'active');
+      // Query karigars and today's production logs in parallel
+      const [kRes, logsRes] = await Promise.all([
+        supabase
+          .from('karigars')
+          .select('*')
+          .eq('business_id', profileId)
+          .eq('status', 'active'),
+        supabase
+          .from('karigar_production_logs')
+          .select('karigar_id, units_produced')
+          .eq('business_id', profileId)
+          .eq('log_date', today)
+      ]);
 
-      if (data && !error) {
-        // Only piece-rate karigars
-        const pieceRateOnly = data.filter(k => 
-          k.payment_type === 'piece_rate' || 
-          k.payment_type === 'piece' || 
-          k.piece_rate > 0 ||
-          k.payment_type === undefined ||
-          k.payment_type === null
+      if (kRes.data) {
+        const prodMap = new Map<string, number>();
+        if (logsRes.data) {
+          for (const log of logsRes.data) {
+            const current = prodMap.get(log.karigar_id) || 0;
+            prodMap.set(log.karigar_id, current + (log.units_produced || 0));
+          }
+        }
+
+        const pieceRateOnly = kRes.data.filter(k => 
+          k.wage_type === 'piece_rate' ||
+          k.payment_type === 'piece_rate'
         );
-        setAllKarigars(pieceRateOnly);
+
+        const enriched = pieceRateOnly.map((k: any) => ({
+          ...k,
+          today_units: prodMap.get(k.id) || 0
+        }));
+
+        setAllKarigars(enriched);
       }
     } catch (err) {
       console.warn('Error loading workers for production logging:', err);
+    }
+  };
+
+  const loadTodaySummary = async () => {
+    try {
+      const session = useAuthStore.getState().session;
+      let profileId = session?.user?.id;
+      if (!profileId) {
+        const profile = await getSafeStorage('noxis_profile', null);
+        if (profile) {
+          const parsed = JSON.parse(profile);
+          profileId = parsed?.id;
+        }
+      }
+      if (!profileId) return;
+
+      const { data, error } = await supabase
+        .from('karigar_production_logs')
+        .select('units_produced, grade')
+        .eq('business_id', profileId)
+        .eq('log_date', today);
+
+      if (data && !error) {
+        let total = 0;
+        let a = 0;
+        let b = 0;
+        let c = 0;
+        let rejected = 0;
+        for (const row of data) {
+          const qtyVal = row.units_produced || 0;
+          total += qtyVal;
+          if (row.grade === 'A') a += qtyVal;
+          else if (row.grade === 'B') b += qtyVal;
+          else if (row.grade === 'C') c += qtyVal;
+          else if (row.grade === 'Rejected') rejected += qtyVal;
+        }
+        setTodaySummary({ total, a, b, c, rejected });
+      }
+    } catch (err) {
+      console.warn('Error loading today summary:', err);
     }
   };
 
@@ -123,229 +208,321 @@ export default function QuickLogScreen() {
     await AsyncStorage.setItem('recent_karigars', JSON.stringify(updated));
   };
 
+  const earnings = useMemo(() => {
+    const n = parseInt(units) || 0;
+    return n * (selectedKarigar?.piece_rate || 0);
+  }, [units, selectedKarigar]);
+
   const handleSubmit = async () => {
-    if (!selectedKarigar || qty <= 0 || !grade) return;
+    const qtyVal = parseInt(units) || 0;
+    if (!selectedKarigar || qtyVal <= 0 || !grade) return;
     
-    // 1. Instantly trigger Success UI states (Optimistic Update)
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    saveRecentKarigar(selectedKarigar);
-    setShowSuccess(true);
+    setIsSubmitting(true);
 
-    const payload = {
-      log_production_req: {
-        karigar_id: selectedKarigar.id,
-        qty,
-        grade,
-        department,
-        timestamp: Date.now()
+    try {
+      const session = useAuthStore.getState().session;
+      let businessId = session?.user?.id;
+      if (!businessId) {
+        const profile = await getSafeStorage('noxis_profile', null);
+        if (profile) {
+          const parsed = JSON.parse(profile);
+          businessId = parsed?.id;
+        }
       }
-    };
+      if (!businessId) throw new Error('No business profile found');
 
-    setQty(1);
+      const result = await writeWithSync(
+        'karigar_production_logs',
+        {
+          business_id: businessId,
+          karigar_id: selectedKarigar.id,
+          log_date: today,
+          units_produced: qtyVal,
+          grade: grade,
+          earnings: earnings,
+          department: department,
+          piece_rate_used: selectedKarigar.piece_rate || 0,
+        },
+        {
+          notifyHub: 'PRODUCTION_LOGGED',
+        }
+      );
+
+      if (!result.success) {
+        setSuccessMsg('Saved to offline queue');
+      } else {
+        setSuccessMsg('Production logged');
+      }
+      saveRecentKarigar(selectedKarigar);
+      setShowSuccess(true);
+      loadTodaySummary();
+      loadAllKarigars();
+    } catch (err: any) {
+      console.error('[QuickLog] Save failed:', err.message);
+      Alert.alert('Error', 'Failed to log production.');
+    }
 
     setTimeout(() => {
       setShowSuccess(false);
+      setIsSubmitting(false);
+      setUnits('1');
+      setSelectedKarigar(null);
+      setKarigarSearch('');
+      router.back();
     }, 1500);
-
-    // 2. Dispatch network call in background
-    NspService.send(payload).catch(async (err) => {
-      console.warn('[QuickLog] Send failed, enqueuing offline request:', err);
-      // 3. Fallback to enqueuing the request if network call fails
-      try {
-        await queueManager.enqueueNspEvent(payload);
-      } catch (queueErr) {
-        console.error('[QuickLog] Failed to enqueue event:', queueErr);
-      }
-    });
   };
 
-  const adjustQty = (amount: number) => {
-    setQty(prev => Math.max(0, prev + amount));
+  const adjustUnits = (amount: number) => {
+    setUnits(prev => {
+      const current = parseInt(prev) || 0;
+      const next = Math.max(0, current + amount);
+      return String(next);
+    });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const GradeButton = ({ item }: any) => (
-    <TouchableOpacity 
-      style={[
-        styles.gradeButton, 
-        { borderColor: item.color },
-        grade === item.id && { backgroundColor: item.color }
-      ]}
-      onPress={() => {
-        setGrade(item.id);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }}
-    >
-      <Text style={[styles.gradeText, grade === item.id && { color: '#fff' }]}>{item.label}</Text>
-    </TouchableOpacity>
-  );
-
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
-    >
-      <Stack.Screen options={{ 
-        title: `${new Date().toLocaleDateString()} Log`,
-        headerStyle: { backgroundColor: THEME.colors.bg },
-        headerTintColor: '#fff',
-        headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
-      }} />
-
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
-        keyboardShouldPersistTaps="handled"
+    <ScreenContainer style={{ flex: 1 }}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
       >
-        {/* Karigar Selector */}
-        <View style={styles.section}>
-          <View style={styles.searchBar}>
-            <LucideSearch size={20} color="#6b7280" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t('quick_log.search_karigar') || `Search ${workerTerm}...`}
-              placeholderTextColor="#6b7280"
-              value={karigarSearch}
-              onChangeText={setKarigarSearch}
-            />
-            {karigarSearch.length > 0 && (
-              <TouchableOpacity onPress={() => setKarigarSearch('')}>
-                <LucideX size={18} color="#6b7280" />
-              </TouchableOpacity>
+        <Stack.Screen options={{ 
+          headerShown: false,
+        }} />
+        <ScreenHeader title={`${new Date().toLocaleDateString()} ${tConfig.production} Log`} showBack={true} />
+
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Karigar Selector */}
+          <View style={styles.section}>
+            <View style={styles.searchBar}>
+              <LucideSearch size={20} color="#6b7280" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={t('quick_log.search_karigar') || `Search ${tConfig.worker}...`}
+                placeholderTextColor="#6b7280"
+                value={karigarSearch}
+                onChangeText={setKarigarSearch}
+              />
+              {karigarSearch.length > 0 && (
+                <TouchableOpacity onPress={() => setKarigarSearch('')}>
+                  <LucideX size={18} color="#6b7280" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Filtered Search Results Dropdown */}
+            {karigarSearch.length > 0 && !selectedKarigar && (
+              <View style={styles.searchResults}>
+                {filteredKarigars.map(k => (
+                  <TouchableOpacity 
+                    key={k.id} 
+                    style={styles.searchItem}
+                    onPress={() => {
+                      setSelectedKarigar(k);
+                      setKarigarSearch('');
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.searchItemName}>{k.name}</Text>
+                      <Text style={styles.searchItemCode}>{k.karigar_code || k.code || `K-${k.id.slice(0, 4).toUpperCase()}`}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.searchItemRate}>
+                        {currency} {(k.piece_rate || 0).toLocaleString()}/pc
+                      </Text>
+                      <Text style={styles.searchItemUnits}>
+                        {k.today_units} units today
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                {filteredKarigars.length === 0 && (
+                  <View style={styles.noResultsBox}>
+                    <Text style={styles.noResultsText}>No matching active {tConfig.worker.toLowerCase()} found</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {recentKarigars.length > 0 && !selectedKarigar && !karigarSearch && (
+              <View style={styles.chipContainer}>
+                {recentKarigars.map(k => (
+                  <TouchableOpacity 
+                    key={k.id} 
+                    style={styles.chip} 
+                    onPress={() => setSelectedKarigar(k)}
+                  >
+                    <Text style={styles.chipText}>{k.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {selectedKarigar && (
+              <View style={styles.selectedKarigarRow}>
+                <View style={styles.karigarInfo}>
+                  <LucideUser color={THEME.colors.gold} size={24} />
+                  <View>
+                    <Text style={styles.selectedKarigarName}>{selectedKarigar.name}</Text>
+                    <Text style={styles.selectedKarigarRate}>Piece Rate: {currency} {(selectedKarigar.piece_rate || 0).toLocaleString()}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => setSelectedKarigar(null)}>
+                  <Text style={styles.changeText}>{t('common.change') || 'Change'}</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
-          {/* Filtered Search Results Dropdown */}
-          {karigarSearch.length > 0 && !selectedKarigar && (
-            <View style={styles.searchResults}>
-              {filteredKarigars.map(k => (
-                <TouchableOpacity 
-                  key={k.id} 
-                  style={styles.searchItem}
+          {/* Qty Input */}
+          <View style={styles.qtySection}>
+            <TouchableOpacity style={styles.qtyBtn} onPress={() => adjustUnits(-1)}>
+              <LucideMinus color="#fff" size={32} />
+            </TouchableOpacity>
+            
+            <View style={styles.qtyDisplay}>
+              <TextInput
+                style={styles.qtyValue}
+                value={units}
+                onChangeText={setUnits}
+                keyboardType="numeric"
+              />
+              <Text style={styles.qtyLabel}>{tConfig.productionUnit || 'Units'}</Text>
+            </View>
+
+            <TouchableOpacity style={styles.qtyBtn} onPress={() => adjustUnits(1)}>
+              <LucidePlus color="#fff" size={32} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Live Earnings Preview */}
+          {units.length > 0 && selectedKarigar && (
+            <View style={styles.earningsPreview}>
+              <Text style={styles.earningsLabel}>
+                Estimated Earnings
+              </Text>
+              <Text style={styles.earningsAmount}>
+                {fmt(earnings)}
+              </Text>
+              <Text style={styles.earningsBreakdown}>
+                {units} × {fmt(selectedKarigar?.piece_rate || 0)}/pc
+              </Text>
+            </View>
+          )}
+
+          {/* Grade Selector */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>SELECT GRADE</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginVertical: 8 }}>
+              {GRADES.map(g => (
+                <TouchableOpacity
+                  key={g.value}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: grade === g.value ? g.color + '80' : 'rgba(255,255,255,0.08)',
+                    backgroundColor: grade === g.value ? g.color + '15' : 'transparent',
+                    alignItems: 'center',
+                  }}
                   onPress={() => {
-                    setSelectedKarigar(k);
-                    setKarigarSearch('');
+                    setGrade(g.value);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
                 >
-                  <Text style={styles.searchItemName}>{k.name}</Text>
-                  <Text style={styles.searchItemCode}>{k.karigar_code || k.code || `K-${k.id.slice(0, 4).toUpperCase()}`}</Text>
+                  <Text style={{
+                    color: grade === g.value ? g.color : '#6b7280',
+                    fontSize: 12,
+                    fontWeight: '700',
+                    fontFamily: THEME.fonts.monoBold
+                  }}>
+                    {grade === g.value ? '✓ ' : ''}{g.value}
+                  </Text>
                 </TouchableOpacity>
               ))}
-              {filteredKarigars.length === 0 && (
-                <View style={styles.noResultsBox}>
-                  <Text style={styles.noResultsText}>No matching active {workerTerm.toLowerCase()} found</Text>
-                </View>
-              )}
             </View>
-          )}
+          </View>
 
-          {recentKarigars.length > 0 && !selectedKarigar && !karigarSearch && (
-            <View style={styles.chipContainer}>
-              {recentKarigars.map(k => (
+          {/* Department Selector */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>DEPARTMENT</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.deptScroll}>
+              {DEPARTMENTS.map(d => (
                 <TouchableOpacity 
-                  key={k.id} 
-                  style={styles.chip} 
-                  onPress={() => setSelectedKarigar(k)}
+                  key={d} 
+                  style={[styles.deptChip, department === d && styles.deptChipActive]}
+                  onPress={() => setDepartment(d)}
                 >
-                  <Text style={styles.chipText}>{k.name}</Text>
+                  <Text style={[styles.deptText, department === d && styles.deptTextActive]}>{d.toUpperCase()}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
-          )}
+            </ScrollView>
+          </View>
 
-          {selectedKarigar && (
-            <View style={styles.selectedKarigarRow}>
-              <View style={styles.karigarInfo}>
-                <LucideUser color={THEME.colors.gold} size={24} />
-                <View>
-                  <Text style={styles.selectedKarigarName}>{selectedKarigar.name}</Text>
-                  <Text style={styles.selectedKarigarRate}>Piece Rate: {currency} {(selectedKarigar.piece_rate || 0).toLocaleString()}</Text>
-                </View>
+          {/* Today's Summary */}
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryCardTitle}>Today's Logged Production</Text>
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatLabel}>Total Units</Text>
+                <Text style={styles.summaryStatValue}>{todaySummary.total.toLocaleString()}</Text>
               </View>
-              <TouchableOpacity onPress={() => setSelectedKarigar(null)}>
-                <Text style={styles.changeText}>{t('common.change') || 'Change'}</Text>
-              </TouchableOpacity>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatLabel}>Grade A</Text>
+                <Text style={[styles.summaryStatValue, { color: '#10B981' }]}>{todaySummary.a.toLocaleString()}</Text>
+              </View>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatLabel}>Grade B</Text>
+                <Text style={[styles.summaryStatValue, { color: '#60A5FA' }]}>{todaySummary.b.toLocaleString()}</Text>
+              </View>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatLabel}>Grade C</Text>
+                <Text style={[styles.summaryStatValue, { color: '#F59E0B' }]}>{todaySummary.c.toLocaleString()}</Text>
+              </View>
+              <View style={styles.summaryStat}>
+                <Text style={styles.summaryStatLabel}>Rejected</Text>
+                <Text style={[styles.summaryStatValue, { color: '#EF4444' }]}>{todaySummary.rejected.toLocaleString()}</Text>
+              </View>
             </View>
-          )}
-        </View>
+          </View>
+        </ScrollView>
 
-        {/* Qty Input */}
-        <View style={styles.qtySection}>
-          <TouchableOpacity style={styles.qtyBtn} onPress={() => adjustQty(-1)}>
-            <LucideMinus color="#fff" size={32} />
+        {/* Pinned Submit Button outside ScrollView */}
+        <View style={styles.footerContainer}>
+          <TouchableOpacity 
+            style={[
+              styles.submitButton, 
+              (!selectedKarigar || parseInt(units) <= 0) && styles.submitButtonDisabled,
+              showSuccess && styles.submitButtonSuccess
+            ]}
+            onPress={handleSubmit}
+            disabled={!selectedKarigar || parseInt(units) <= 0 || isSubmitting || showSuccess}
+          >
+            {showSuccess ? (
+              <View style={styles.successRow}>
+                <LucideCheckCircle color="#fff" size={24} />
+                <Text style={styles.submitButtonText}>{t('common.logged') || 'Logged!'}</Text>
+              </View>
+            ) : (
+              <Text style={styles.submitButtonText}>
+                {t('quick_log.submit_label') || `Log ${units} ${tConfig.productionUnit} — Grade ${grade}`}
+              </Text>
+            )}
           </TouchableOpacity>
-          
-          <View style={styles.qtyDisplay}>
-            <TextInput
-              style={styles.qtyValue}
-              value={qty.toString()}
-              onChangeText={(v) => setQty(parseInt(v) || 0)}
-              keyboardType="numeric"
-            />
-            <Text style={styles.qtyLabel}>{t('common.units') || 'Units'}</Text>
-          </View>
-
-          <TouchableOpacity style={styles.qtyBtn} onPress={() => adjustQty(1)}>
-            <LucidePlus color="#fff" size={32} />
-          </TouchableOpacity>
         </View>
-
-        {/* Earnings Preview */}
-        {selectedKarigar && qty > 0 && (
-          <View style={styles.earningsBox}>
-            <Text style={styles.earningsText}>
-              Earnings: {currency} {(qty * (selectedKarigar.piece_rate || 0)).toLocaleString()}
-            </Text>
-          </View>
-        )}
-
-        {/* Grade Selector */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SELECT_GRADE</Text>
-          <View style={styles.gradeGrid}>
-            {GRADES.map(item => <GradeButton key={item.id} item={item} />)}
-          </View>
-        </View>
-
-        {/* Department Selector */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DEPARTMENT</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.deptScroll}>
-            {DEPARTMENTS.map(d => (
-              <TouchableOpacity 
-                key={d} 
-                style={[styles.deptChip, department === d && styles.deptChipActive]}
-                onPress={() => setDepartment(d)}
-              >
-                <Text style={[styles.deptText, department === d && styles.deptTextActive]}>{d.toUpperCase()}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Submit Button */}
-        <TouchableOpacity 
-          style={[
-            styles.submitButton, 
-            (!selectedKarigar || qty <= 0) && styles.submitButtonDisabled,
-            showSuccess && styles.submitButtonSuccess
-          ]}
-          onPress={handleSubmit}
-          disabled={!selectedKarigar || qty <= 0 || isSubmitting || showSuccess}
-        >
-          {showSuccess ? (
-            <View style={styles.successRow}>
-              <LucideCheckCircle color="#fff" size={24} />
-              <Text style={styles.submitButtonText}>{t('common.logged') || 'Logged!'}</Text>
-            </View>
-          ) : (
-            <Text style={styles.submitButtonText}>
-              {t('quick_log.submit_label') || `Log ${qty} Units — Grade ${grade}`}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+      <SuccessOverlay
+        message={successMsg}
+        visible={showSuccess}
+        onHide={() => setShowSuccess(false)}
+      />
+    </ScreenContainer>
   );
 }
 
@@ -357,6 +534,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     gap: 24,
+    paddingBottom: 40,
   },
   section: {
     gap: 12,
@@ -398,9 +576,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   searchItemCode: {
-    color: THEME.colors.gold,
+    color: '#4B5563',
     fontFamily: THEME.fonts.mono,
-    fontSize: 11,
+    fontSize: 10,
+  },
+  searchItemRate: {
+    color: THEME.colors.gold,
+    fontSize: 12,
+    fontFamily: THEME.fonts.mono,
+  },
+  searchItemUnits: {
+    color: '#60A5FA',
+    fontSize: 10,
+    marginTop: 2,
   },
   noResultsBox: {
     padding: 16,
@@ -496,18 +684,32 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: -4,
   },
-  earningsBox: {
+  earningsPreview: {
     backgroundColor: 'rgba(16, 185, 129, 0.08)',
-    borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.25)',
-    borderRadius: 12,
-    padding: 14,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
+    gap: 4,
   },
-  earningsText: {
-    fontSize: 13,
+  earningsLabel: {
+    color: '#6B7280',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  earningsAmount: {
     color: '#10B981',
-    fontFamily: THEME.fonts.monoBold,
+    fontSize: 28,
+    fontWeight: '900',
+    fontFamily: THEME.fonts.monoExtraBold,
+  },
+  earningsBreakdown: {
+    color: '#6B7280',
+    fontSize: 11,
+    fontFamily: THEME.fonts.mono,
   },
   sectionTitle: {
     color: THEME.colors.textSecondary,
@@ -515,26 +717,6 @@ const styles = StyleSheet.create({
     fontFamily: THEME.fonts.monoBold,
     letterSpacing: 1.5,
     marginBottom: 8,
-  },
-  gradeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  gradeButton: {
-    flex: 1,
-    minWidth: '45%',
-    height: 60,
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: THEME.colors.surface,
-  },
-  gradeText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: THEME.fonts.monoBold
   },
   deptScroll: {
     flexDirection: 'row',
@@ -561,13 +743,18 @@ const styles = StyleSheet.create({
   deptTextActive: {
     color: '#000',
   },
+  footerContainer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: '#09090b',
+  },
   submitButton: {
     backgroundColor: THEME.colors.blue,
     height: 64,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
   },
   submitButtonDisabled: {
     backgroundColor: THEME.colors.surface,
@@ -585,5 +772,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  summaryCard: {
+    backgroundColor: '#0F1114',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    padding: 16,
+    gap: 12,
+    marginTop: 8,
+  },
+  summaryCardTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  summaryStat: {
+    minWidth: '45%',
+    gap: 2,
+  },
+  summaryStatLabel: {
+    fontSize: 9,
+    color: '#4B5563',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  summaryStatValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: THEME.fonts.monoBold,
   },
 });

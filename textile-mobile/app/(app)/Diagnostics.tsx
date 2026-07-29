@@ -6,6 +6,7 @@ import { useDiagnosticStore } from '../../src/store/DiagnosticsStore';
 import { THEME } from '../../src/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 
 /**
  * PRODUCTION DIAGNOSTICS SCREEN
@@ -67,12 +68,7 @@ export default function DiagnosticsScreen() {
         </View>
       )}
 
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.title}>FORENSIC STACK HEALTH</Text>
-      </View>
+      <ScreenHeader title="Forensic Stack Health" showBack={true} />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <MetricSection title="BINARY_PIPELINE">

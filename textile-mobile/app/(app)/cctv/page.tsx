@@ -9,6 +9,7 @@ import { CctvDataService } from '../../../src/services/CctvDataService';
 import { BridgeStatusBar } from '../../../src/components/shell/BridgeStatusBar';
 import { formatDistanceToNow } from 'date-fns';
 import { FeatureLock } from '../../../src/components/tier/FeatureLock';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 /**
  * SECURITY LOG (M7)
@@ -74,12 +75,13 @@ export default function SecurityLog() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: t('SECURITY_LOG'), 
+          headerShown: false, title: t('SECURITY_LOG'), 
           headerStyle: { backgroundColor: THEME.colors.bg }, 
           headerTintColor: 'white',
           headerTitleStyle: { fontWeight: '900' }
         }} 
       />
+      <ScreenHeader title="SECURITY_LOG" showBack={true} />
       <BridgeStatusBar />
       
       <View style={styles.filterContainer}>

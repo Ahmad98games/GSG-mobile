@@ -5,6 +5,7 @@ import { tcpService } from '../../../src/services/TCPClientService';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { formatCurrency } from '../../../src/lib/currency/formatCurrency';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 export default function StockScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -61,7 +62,8 @@ export default function StockScannerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: 'Stock Scanner', headerStyle: { backgroundColor: '#121417' }, headerTintColor: 'white' }} />
+      <Stack.Screen options={{ headerShown: false, title: 'Stock Scanner', headerStyle: { backgroundColor: '#121417' }, headerTintColor: 'white' }} />
+      <ScreenHeader title="Stock Scanner" showBack={true} />
       
       {isScanning ? (
         <View style={styles.cameraContainer}>

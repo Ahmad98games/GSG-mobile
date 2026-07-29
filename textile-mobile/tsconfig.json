@@ -7,8 +7,17 @@
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@/src/*": ["src/*"]
     }
   },
-  "exclude": ["supabase/functions", "src/lib/mesh/NoxisSynapse"]
+  "exclude": [
+    "supabase/functions",
+    "src/lib/mesh/NoxisSynapse",
+    "node_modules",
+    "android",
+    "ios",
+    ".expo",
+    "dist"
+  ]
 }

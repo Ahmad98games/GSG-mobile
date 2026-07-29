@@ -33,6 +33,7 @@ import Animated, {
 import { ScannerService } from '../../../src/services/ScannerService';
 import { useScannerStore } from '../../../src/store/ScannerStore';
 import * as Haptics from 'expo-haptics';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -116,11 +117,12 @@ export default function StockLookupScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ 
-        title: 'STOCK_LOOKUP', 
+        headerShown: false, title: 'STOCK_LOOKUP', 
         headerStyle: { backgroundColor: THEME.colors.bg }, 
         headerTintColor: 'white',
         headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
       }} />
+      <ScreenHeader title="STOCK_LOOKUP" showBack={true} />
 
       <View style={styles.cameraFrame}>
         {isScanning && (

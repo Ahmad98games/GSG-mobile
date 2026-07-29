@@ -16,6 +16,7 @@ import { useBridgeStatus } from '../../../src/store/BridgeStatusStore';
 import { NspService } from '../../../src/services/NspService';
 import { queueManager } from '../../../src/services/OfflineQueueManager';
 import { LucideCheck, LucideChevronDown, LucideChevronUp, LucideInfo } from 'lucide-react-native';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 const ShiftHandoverScreen = () => {
   const { t } = usePersona();
@@ -124,7 +125,8 @@ const ShiftHandoverScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
       style={styles.container}
     >
-      <Stack.Screen options={{ title: t('handover.title') || 'Shift Handover', headerStyle: { backgroundColor: '#000' }, headerTintColor: '#fff' }} />
+      <Stack.Screen options={{ headerShown: false, title: t('handover.title') || 'Shift Handover', headerStyle: { backgroundColor: '#000' }, headerTintColor: '#fff' }} />
+      <ScreenHeader title="handover.title" showBack={true} />
 
       {isOffline && (
         <View style={styles.offlineBanner}>

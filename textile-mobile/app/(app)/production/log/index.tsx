@@ -5,6 +5,7 @@ import { tcpService } from '../../../../src/services/TCPClientService';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { queueManager } from '../../../../src/services/OfflineQueueManager';
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 
 export default function ProductionLogScreen() {
   const router = useRouter();
@@ -46,7 +47,8 @@ export default function ProductionLogScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: 'Log Output', headerStyle: { backgroundColor: '#121417' }, headerTintColor: 'white' }} />
+      <Stack.Screen options={{ headerShown: false, title: 'Log Output', headerStyle: { backgroundColor: '#121417' }, headerTintColor: 'white' }} />
+      <ScreenHeader title="Log Output" showBack={true} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.batchInfo}>
           <Text style={styles.label}>ACTIVE BATCH</Text>

@@ -18,6 +18,12 @@ export const CHANNELS = {
   NOXIS_ALERTS: 'noxis_alerts',
   PAYMENT_DUE: 'payment_due',
   PRODUCTION_ALERT: 'production_alert',
+  NOXIS_GENERAL: 'noxis_general',
+  NOXIS_LOW_STOCK: 'noxis_low_stock',
+  NOXIS_PAYMENT_DUE: 'noxis_payment_due',
+  NOXIS_PRODUCTION: 'noxis_production',
+  NOXIS_AUDIT: 'noxis_audit',
+  NOXIS_STAFF: 'noxis_staff',
 } as const;
 
 /**
@@ -28,6 +34,48 @@ export async function createAllChannels() {
   if (Platform.OS !== 'android') return;
 
   const channelsToCreate = [
+    {
+      id: 'noxis_general',
+      name: 'Noxis General',
+      importance: AndroidImportance.HIGH,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: 'noxis_low_stock',
+      name: 'Noxis Stock Alerts',
+      importance: AndroidImportance.DEFAULT,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: 'noxis_payment_due',
+      name: 'Noxis Payment Reminders',
+      importance: AndroidImportance.DEFAULT,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: 'noxis_production',
+      name: 'Noxis Production Alerts',
+      importance: AndroidImportance.HIGH,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: 'noxis_audit',
+      name: 'Noxis Compliance Reminders',
+      importance: AndroidImportance.HIGH,
+      vibration: true,
+      badge: true,
+    },
+    {
+      id: 'noxis_staff',
+      name: 'Noxis Staff Operations',
+      importance: AndroidImportance.DEFAULT,
+      vibration: true,
+      badge: true,
+    },
     {
       id: CHANNELS.NOXIS_ALERTS,
       name: 'Noxis Alerts',

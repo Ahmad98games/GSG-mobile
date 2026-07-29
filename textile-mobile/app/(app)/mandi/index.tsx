@@ -22,6 +22,7 @@ import { NspService } from '../../../src/services/NspService';
 import { useProfileStore } from '../../../src/store/ProfileStore';
 import { useBridgeStatus } from '../../../src/store/BridgeStatusStore';
 import { formatCurrency } from '../../../src/lib/currency/formatCurrency';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 type MandiRate = {
   id: string;
@@ -113,11 +114,12 @@ export default function MandiRateScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ 
-        title: 'MANDI_RATES',
+        headerShown: false, title: 'MANDI_RATES',
         headerStyle: { backgroundColor: THEME.colors.bg },
         headerTintColor: 'white',
         headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
       }} />
+      <ScreenHeader title="MANDI_RATES" showBack={true} />
 
       <View style={styles.statusHeader}>
         <Calendar size={14} color={THEME.colors.textMuted} />

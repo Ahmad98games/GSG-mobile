@@ -5,6 +5,7 @@ import { useCashflowStore } from '../../../src/store/CashflowStore';
 import { usePersona } from '../../../src/hooks/usePersona';
 import { NspService } from '../../../src/services/NspService';
 import { LucideArrowUpRight, LucideArrowDownRight, LucideInfo } from 'lucide-react-native';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 const CashflowDetailScreen = () => {
   const { t, fmt } = usePersona();
@@ -52,11 +53,12 @@ const CashflowDetailScreen = () => {
     <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: t('cashflow.detail_title') || 'Cash Intelligence',
+          headerShown: false, title: t('cashflow.detail_title') || 'Cash Intelligence',
           headerStyle: { backgroundColor: '#000' },
           headerTintColor: '#fff',
         }} 
       />
+      <ScreenHeader title="cashflow.detail_title" showBack={true} />
 
       <ScrollView 
         contentContainerStyle={styles.scrollContent}

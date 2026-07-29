@@ -21,6 +21,7 @@ import * as SQLite from 'expo-sqlite';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withRepeat, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { FeatureLock } from '../../../src/components/tier/FeatureLock';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 const db = SQLite.openDatabaseSync('omnora_mesh.db');
 
@@ -133,16 +134,13 @@ export default function ChatThreadScreen() {
       keyboardVerticalOffset={90}
     >
       <Stack.Screen options={{ 
-        title: peerInfo?.peer_display_name || peerInfo?.peer_node_id || 'Chat',
-        headerStyle: { backgroundColor: '#121417' },
-        headerTintColor: 'white',
-        headerRight: () => (
-          <View style={styles.headerStatus}>
-            <Text style={styles.statusText}>{connectionState === 'connected' ? 'Online' : 'Offline'}</Text>
-            <View style={[styles.statusDot, { backgroundColor: connectionState === 'connected' ? '#10B981' : '#EF4444' }]} />
-          </View>
-        )
+        headerShown: false,
       }} />
+      <ScreenHeader 
+        title={peerInfo?.peer_display_name || peerInfo?.peer_node_id || 'Chat'} 
+        subtitle={connectionState === 'connected' ? 'Online' : 'Offline'}
+        showBack={true} 
+      />
 
       <FlatList
         ref={flatListRef}

@@ -131,9 +131,11 @@ export default function WebPairScreen() {
 
         {/* ── HEADER ── */}
         <View style={styles.header}>
-          <Text style={styles.brand}>OMNORA / NOXIS</Text>
-          <Text style={styles.title}>INDUSTRIAL OS</Text>
-          <Text style={styles.subtitle}>Mobile Command Center — Web Companion</Text>
+          <Text style={styles.brand}>OMNORA</Text>
+          <Text style={styles.title}>NOXIS HUB</Text>
+          <Text style={styles.subtitle}>Mobile Command Center</Text>
+
+
         </View>
 
         {/* ── FEATURE GRID ── */}
@@ -187,6 +189,7 @@ export default function WebPairScreen() {
             keyboardType="decimal-pad"
             autoCapitalize="none"
             autoCorrect={false}
+            
           />
 
           <Text style={[styles.inputLabel, { marginTop: 12 }]}>HUB PORT (default: 3000)</Text>
@@ -245,12 +248,14 @@ export default function WebPairScreen() {
           <Text style={styles.helpText}>• Wrong IP? On Windows: open Command Prompt → type <Text style={styles.code}>ipconfig</Text> → use "IPv4 Address"</Text>
           <Text style={styles.helpText}>• Firewall? Allow port {port} in Windows Defender Firewall for the Hub app</Text>
           <Text style={styles.helpText}>• Still stuck? Connect both devices to the same Wi-Fi router, not mobile hotspot</Text>
+
         </View>
 
         <Text style={styles.footer}>
           SECURE HANDSHAKE: AES-256-GCM + P-256{'\n'}
-          NOXIS INDUSTRIAL OS v13.1 — WEB COMPANION
+          NOXIS HUB v13.1
         </Text>
+
 
       </Animated.View>
     </ScrollView>

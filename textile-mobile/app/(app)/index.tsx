@@ -7,6 +7,7 @@ import { useAuthStore } from '../../src/store/AuthStore';
 import { useVisionStore } from '../../src/store/VisionStore';
 import { Activity, Shield, Wifi, HardDrive, Cpu, Download, Database, Server } from 'lucide-react-native';
 import { Image } from 'expo-image';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 
 export default function HealthScreen() {
   const { connectionState, signalQuality, rollingRtt } = useBridgeStatus();
@@ -33,11 +34,12 @@ export default function HealthScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Stack.Screen options={{ 
-        title: 'System Health', 
+        headerShown: false, title: 'System Health', 
         headerStyle: { backgroundColor: THEME.colors.bg }, 
         headerTintColor: 'white',
         headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }
       }} />
+      <ScreenHeader title="System Health" showBack={true} />
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>{companyName.toUpperCase()}</Text>

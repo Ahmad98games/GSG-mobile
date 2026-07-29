@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { THEME, COMMON_STYLES } from '../../../src/constants/DesignSystem';
+import { ScreenContainer } from '../../../src/components/ui/ScreenContainer';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ErrorState } from '../../../src/components/ui/ErrorState';
+import { SkeletonRow } from '../../../src/components/ui/SkeletonRow';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../src/lib/supabase';
 import { SyncEngine } from '../../../src/lib/SyncEngine';
@@ -19,12 +23,14 @@ export default function ProductionHome() {
   const [syncCount, setSyncCount] = useState(0);
   const [jobOrders, setJobOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const nodeRole = useAuthStore(s => s.nodeRole);
   const nodeId = useAuthStore(s => s.nodeId);
   
   const fetchJobOrders = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const { data, error } = await supabase
         .from('job_orders')
         .select(`
@@ -37,6 +43,7 @@ export default function ProductionHome() {
       setJobOrders(data || []);
     } catch (err) {
       console.error('Fetch Job Orders Error:', err);
+      setError('Could not load production logs. Check your connection.');
     } finally {
       setIsLoading(false);
     }
@@ -71,34 +78,12 @@ export default function ProductionHome() {
     return () => clearInterval(interval);
   }, []);
 
-  const renderJobCard = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      style={COMMON_STYLES.card}
-      onPress={() => router.push(`/(app)/production/job/${item.code}`)}
-    >
-      <View style={styles.cardHeader}>
-        <Text style={styles.jobCode}>{item.code}</Text>
-        <StatusBadge status={item.status} />
-      </View>
-
-      <Text style={styles.articleName}>{item.articles?.name || 'Unknown Article'}</Text>
-      <Text style={styles.articleSub}>{item.articles?.desi_color_name || 'No Color'}</Text>
-
-      <View style={styles.statsRow}>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>{t('production.target_suits')}</Text>
-          <Text style={styles.statValue}>{item.target_suits} S</Text>
-        </View>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>{t('production.gaz_issued')}</Text>
-          <Text style={styles.statValue}>{item.gaz_issued} G</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderJobCard = useCallback(({ item }: { item: any }) => (
+    <ProductionRow item={item} onPress={() => router.push(`/(app)/production/job/${item.code}`)} t={t} />
+  ), [router, t]);
 
   return (
-    <View style={COMMON_STYLES.container}>
+    <ScreenContainer style={COMMON_STYLES.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>PRODUCTION_NODE</Text>
@@ -135,26 +120,36 @@ export default function ProductionHome() {
         </View>
       )}
 
-      <FlatList
-        data={jobOrders}
-        keyExtractor={React.useCallback((item: any) => item.id, [])}
-        renderItem={renderJobCard}
-        contentContainerStyle={styles.listContent}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        initialNumToRender={8}
-        refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={fetchJobOrders} tintColor={THEME.colors.blue} />
-        }
-        ListEmptyComponent={() => (
-          <View style={styles.empty}>
-            <Ionicons name="clipboard-outline" size={48} color={THEME.colors.surfaceLighter} />
-            <Text style={styles.emptyText}>QUEUE_EMPTY_OR_OFFLINE</Text>
-          </View>
-        )}
-      />
-    </View>
+      {isLoading ? (
+        <SkeletonRow lines={6} />
+      ) : error ? (
+        <ErrorState
+          message={error}
+          onRetry={fetchJobOrders}
+        />
+      ) : (
+        <FlatList
+          data={jobOrders}
+          keyExtractor={React.useCallback((item: any) => item.id, [])}
+          renderItem={renderJobCard}
+          contentContainerStyle={styles.listContent}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          initialNumToRender={8}
+          refreshControl={
+            <RefreshControl refreshing={isLoading} onRefresh={fetchJobOrders} tintColor={THEME.colors.blue} />
+          }
+          ListEmptyComponent={() => (
+            <EmptyState
+              icon="⚡"
+              title="No production logs"
+              description="Active job orders will show up here once dispatched."
+            />
+          )}
+        />
+      )}
+    </ScreenContainer>
   );
 }
 
@@ -170,6 +165,48 @@ const StatusBadge = ({ status }: { status: string }) => {
     </View>
   );
 };
+
+interface ProductionRowProps {
+  item: any
+  onPress: () => void
+  t: any
+}
+
+const ProductionRow = React.memo(function ProductionRow({ item, onPress, t }: ProductionRowProps) {
+  return (
+    <TouchableOpacity 
+      style={COMMON_STYLES.card}
+      onPress={onPress}
+    >
+      <View style={styles.cardHeader}>
+        <Text style={styles.jobCode}>{item.code}</Text>
+        <StatusBadge status={item.status} />
+      </View>
+
+      <Text style={styles.articleName}>{item.articles?.name || 'Unknown Article'}</Text>
+      <Text style={styles.articleSub}>{item.articles?.desi_color_name || 'No Color'}</Text>
+
+      <View style={styles.statsRow}>
+        <View style={styles.stat}>
+          <Text style={styles.statLabel}>{t('production.target_suits')}</Text>
+          <Text style={styles.statValue}>{item.target_suits} S</Text>
+        </View>
+        <View style={styles.stat}>
+          <Text style={styles.statLabel}>{t('production.gaz_issued')}</Text>
+          <Text style={styles.statValue}>{item.gaz_issued} G</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}, (prev, next) => {
+  return prev.item.id === next.item.id && 
+         prev.item.status === next.item.status && 
+         prev.item.code === next.item.code &&
+         prev.item.target_suits === next.item.target_suits &&
+         prev.item.gaz_issued === next.item.gaz_issued &&
+         prev.item.articles?.name === next.item.articles?.name &&
+         prev.item.articles?.desi_color_name === next.item.articles?.desi_color_name;
+});
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, paddingTop: 60 },

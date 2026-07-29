@@ -30,6 +30,12 @@ import { queueManager } from '../../../src/services/OfflineQueueManager';
 import { useBridgeStatus } from '../../../src/store/BridgeStatusStore';
 import { PersonaEngine } from '../../../src/lib/persona/PersonaEngine';
 import * as Haptics from 'expo-haptics';
+import { useIndustryConfig } from '../../../src/hooks/useIndustryConfig';
+import { writeWithSync } from '../../../src/services/OfflineSyncService';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
+import { useAuthStore } from '../../../src/store/AuthStore';
+import { getSafeStorage } from '../../../src/utils/storage';
 
 type Karigar = {
   id: string;
@@ -40,7 +46,26 @@ type Karigar = {
 
 export default function PeshgiScreen() {
   const router = useRouter();
-  const { connectionState, workerTerm, workerTermPlural, advanceTerm } = useBridgeStatus();
+  const { canGivePeshgi } = useBridgeStatus();
+  const tConfig = useIndustryConfig();
+  const workerTerm = tConfig.worker;
+  const workerTermPlural = tConfig.workers;
+  const advanceTerm = tConfig.advance;
+  const currency = tConfig.currency;
+
+  if (!canGivePeshgi) {
+    return (
+      <View style={{ flex: 1, backgroundColor: THEME.colors.bg }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ScreenHeader title={`Give ${tConfig.advance}`} showBack={true} />
+        <EmptyState
+          icon="🔒"
+          title="Access Denied"
+          description={`You do not have permission to give ${tConfig.advance.toLowerCase()}. Please contact your factory administrator.`}
+        />
+      </View>
+    );
+  }
   
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,31 +106,50 @@ export default function PeshgiScreen() {
       return;
     }
 
-    const payload = {
-      karigar_id: selectedKarigar.id,
-      amount: parseFloat(amount),
-      reason,
-      timestamp: Date.now()
-    };
-
     setLoading(true);
     try {
-      if (connectionState === 'connected') {
-        // Mock NSP call
+      const session = useAuthStore.getState().session;
+      let businessId = session?.user?.id;
+      if (!businessId) {
+        const profile = await getSafeStorage('noxis_profile', null);
+        if (profile) {
+          const parsed = JSON.parse(profile);
+          businessId = parsed?.id;
+        }
+      }
+      if (!businessId) throw new Error('No business profile found');
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const result = await writeWithSync(
+        'peshgi_transactions',
+        {
+          business_id: businessId,
+          karigar_id: selectedKarigar.id,
+          amount: parseFloat(amount),
+          reason: reason || 'Advance given',
+          given_date: today,
+          given_by: 'mobile',
+        },
+        {
+          notifyHub: 'ADVANCE_GIVEN',
+        }
+      );
+
+      if (result.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         const newTotal = selectedKarigar.balance + parseFloat(amount);
         Alert.alert(
           `${advanceTerm} Given`, 
-          `${PersonaEngine.fmt(amount)} advance given to ${selectedKarigar.name}.\nTotal outstanding: ${PersonaEngine.fmt(newTotal)}`
+          `${currency} ${parseFloat(amount).toLocaleString()} advance given to ${selectedKarigar.name}.\nTotal outstanding: ${currency} ${newTotal.toLocaleString()}`
         );
-        router.back();
       } else {
-        await queueManager.enqueueNspEvent({ peshgi_request: payload });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         Alert.alert('Queued', `${advanceTerm} queued — will post when connected to Hub`);
-        router.back();
       }
-    } catch (e) {
+      router.back();
+    } catch (e: any) {
+      console.error('[Peshgi] Save failed:', e.message);
       Alert.alert('Error', `Failed to submit ${advanceTerm.toLowerCase()}.`);
     } finally {
       setLoading(false);
@@ -119,7 +163,7 @@ export default function PeshgiScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
     >
       <Stack.Screen options={{ 
-        title: 'Give Advance',
+        title: `Give ${advanceTerm}`,
         headerStyle: { backgroundColor: THEME.colors.bg },
         headerTintColor: 'white',
         headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 }

@@ -8,6 +8,7 @@ import type { TierFeatures } from '../../../src/store/BridgeStatusStore';
 import { usePersona } from '../../../src/hooks/usePersona';
 import { useAuthStore } from '../../../src/store/AuthStore';
 import { DeviceCounterCard } from '../../../src/components/tier/DeviceCounterCard';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 /**
  * PLAN DETAILS SCREEN
@@ -63,12 +64,13 @@ export default function PlanScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: t('tier.plan_title'),
+          headerShown: false, title: t('tier.plan_title'),
           headerStyle: { backgroundColor: THEME.colors.background },
           headerTintColor: '#fff',
           headerTitleStyle: { fontFamily: THEME.fonts.interBold }
         }} 
       />
+      <ScreenHeader title="tier.plan_title" showBack={true} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* CURRENT PLAN CARD */}

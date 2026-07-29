@@ -7,6 +7,8 @@ import { usePersona } from '../../../src/hooks/usePersona';
 import { openMeshDb } from '../../../src/lib/db/meshDb';
 import { formatDistanceToNow } from 'date-fns';
 
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
+
 const PAGE_SIZE = 50;
 
 type NotificationEvent = {
@@ -160,15 +162,17 @@ export default function NotificationHistory() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: 'Notifications',
-          headerStyle: { backgroundColor: THEME.colors.bg },
-          headerTintColor: '#fff',
-          headerRight: () => (
-            <TouchableOpacity onPress={handleClearAll} style={styles.clearBtn}>
-              <Trash2 size={18} color={THEME.colors.textSecondary} />
-            </TouchableOpacity>
-          )
+          headerShown: false,
         }} 
+      />
+      <ScreenHeader 
+        title="Notifications" 
+        showBack={true} 
+        rightAction={{
+          label: "Clear",
+          onPress: handleClearAll,
+          color: THEME.colors.critical || "#EF4444"
+        }}
       />
 
       <View style={styles.filterContainer}>

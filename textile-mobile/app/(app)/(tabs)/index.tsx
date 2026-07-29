@@ -23,6 +23,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as Haptics from 'expo-haptics';
 
 import { DashboardWidgetSkeleton } from '../../../src/components/ui/SkeletonLoader';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 const { width } = Dimensions.get('window');
 
@@ -103,6 +104,7 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'Dashboard', headerShown: false }} />
+      <ScreenHeader title="Dashboard" showBack={true} />
       <BridgeStatusBar />
       
       <ScrollView 

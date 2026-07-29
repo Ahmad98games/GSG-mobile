@@ -14,6 +14,7 @@ import {
   Animated
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
+import { ScreenContainer } from '../../src/components/ui/ScreenContainer';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -22,6 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { tcpService } from '../../src/services/TCPClientService';
 import { discoveryService } from '../../src/services/NoxisDiscoveryService';
 import { useConnection } from '../../src/store/ConnectionContext';
+import { useAuthStore } from '../../src/store/AuthStore';
 
 const { width } = Dimensions.get('window');
 const GOLD = '#D4AF37';
@@ -90,12 +92,16 @@ export default function PairingScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
     try {
+      // Generate nodeId
+      const nodeId = `node-${Math.random().toString(36).substring(7)}`;
+
       // ZERO-TOUCH: Immediate persistence
       await Promise.all([
-        AsyncStorage.setItem('gs_hub_ip', ip),
         AsyncStorage.setItem('gs_mesh_key', secret),
-        SecureStore.setItemAsync('gs_node_id', `node-${Math.random().toString(36).substring(7)}`),
       ]);
+
+      // Update Zustand Auth Store (sets isAuthenticated: true and saves to AsyncStorage/SecureStore)
+      useAuthStore.getState().setCredentials(ip, 7447, nodeId, 'LITE', 'MANAGER_ROVING');
 
       // TRIGGER BINARY HANDSHAKE
       console.log(`[Pairing] Initiating handshake with ${ip}`);
@@ -160,7 +166,7 @@ export default function PairingScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <ScreenContainer style={styles.container}>
       <Stack.Screen options={{ title: 'Pair with Hub' }} />
       <View style={styles.header}>
         <Text style={styles.brand}>OMNORA OS / TACTICAL BRIDGE</Text>
@@ -260,7 +266,7 @@ export default function PairingScreen() {
       <View style={styles.footer}>
         <Text style={styles.footerText}>SECURE ENCRYPTION: AES-256-GCM ACTIVE</Text>
       </View>
-    </View>
+    </ScreenContainer>
   );
 }
 

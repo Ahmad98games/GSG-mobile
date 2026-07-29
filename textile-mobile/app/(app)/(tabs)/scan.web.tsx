@@ -14,6 +14,7 @@ import { ScannerService } from '../../../src/services/ScannerService';
 import { useScannerStore } from '../../../src/store/ScannerStore';
 import { THEME } from '../../../src/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 export default function StockLookupWebScreen() {
   const router = useRouter();
@@ -63,11 +64,12 @@ export default function StockLookupWebScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{
-        title: 'STOCK_LOOKUP',
+        headerShown: false, title: 'STOCK_LOOKUP',
         headerStyle: { backgroundColor: THEME.colors.bg },
         headerTintColor: 'white',
         headerTitleStyle: { fontFamily: THEME.fonts.monoBold, fontSize: 12 },
       }} />
+      <ScreenHeader title="STOCK_LOOKUP" showBack={true} />
 
       {isScanning ? (
         <View style={styles.scanArea}>

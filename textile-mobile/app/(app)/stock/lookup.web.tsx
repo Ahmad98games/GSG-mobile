@@ -14,6 +14,7 @@ import { useScannerStore } from '../../../src/store/ScannerStore';
 import { useBridgeStatus } from '../../../src/store/BridgeStatusStore';
 import { THEME } from '../../../src/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 export default function StockLookupWebScreen() {
   const router = useRouter();
@@ -31,7 +32,8 @@ export default function StockLookupWebScreen() {
   if (!isHubConnected) {
     return (
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Stock', headerStyle: { backgroundColor: THEME.colors.bg }, headerTintColor: 'white' }} />
+        <Stack.Screen options={{ headerShown: false, title: 'Stock', headerStyle: { backgroundColor: THEME.colors.bg }, headerTintColor: 'white' }} />
+      <ScreenHeader title="Stock" showBack={true} />
         <View style={styles.offlineContainer}>
           <Text style={styles.offlineIcon}>📡</Text>
           <Text style={styles.offlineTitle}>Hub Not Connected</Text>
