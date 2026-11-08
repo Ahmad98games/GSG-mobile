@@ -90,10 +90,18 @@ class TCPClientService extends EventEmitter {
     });
   }
 
+  public resetWatchdog() {
+    this.missedHeartbeats = 0;
+  }
+
   private startHeartbeatWatchdog() {
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     
     this.heartbeatTimer = setInterval(() => {
+      if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+        this.missedHeartbeats = 0;
+        return;
+      }
       if (!this.isConnected) return;
 
       this.missedHeartbeats++;
@@ -434,6 +442,7 @@ export async function connectViaWebSocket(
 
   wsSocket.onmessage = (event) => {
     try {
+      tcpService.resetWatchdog();
       const msg = JSON.parse(event.data);
       handleBridgeMessage(msg);
     } catch (err) {
@@ -469,29 +478,20 @@ export async function connectViaWebSocket(
 function scheduleReconnect(
   bridgeUrl: string
 ): void {
-  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    console.log('[WS] Max reconnect attempts reached');
-    return;
-  }
-
-  // Exponential backoff: 2s, 4s, 8s... max 60s
+  // Always retry with capped exponential backoff (max 10s) on primary port 7447
   const delay = Math.min(
-    RECONNECT_BASE_DELAY * Math.pow(2, reconnectAttempts),
-    60000
+    RECONNECT_BASE_DELAY * Math.pow(1.5, Math.min(reconnectAttempts, 6)),
+    10000
   );
   reconnectAttempts++;
 
-  // Multi-port fallback: alternate between primary port 7447 and fallback port 9001
+  // Normalize target URL to keep port 7447
   let targetUrl = bridgeUrl;
-  if (reconnectAttempts % 2 === 1) {
-    if (bridgeUrl.includes(':7447')) {
-      targetUrl = bridgeUrl.replace(':7447', ':9001');
-    } else if (bridgeUrl.includes(':9001')) {
-      targetUrl = bridgeUrl.replace(':9001', ':7447');
-    }
+  if (targetUrl.includes(':9001')) {
+    targetUrl = targetUrl.replace(':9001', ':7447');
   }
 
-  console.log(`[WS] Reconnecting to ${targetUrl} in ${delay}ms (attempt ${reconnectAttempts})`);
+  console.log(`[WS] Auto-reconnecting to ${targetUrl} in ${delay}ms (attempt ${reconnectAttempts})`);
 
   reconnectTimer = setTimeout(() => {
     connectViaWebSocket(targetUrl);
@@ -499,6 +499,7 @@ function scheduleReconnect(
 }
 
 function handleBridgeMessage(msg: any): void {
+  tcpService.resetWatchdog();
   const store = useBridgeStatusStore.getState();
 
   switch (msg.type) {
