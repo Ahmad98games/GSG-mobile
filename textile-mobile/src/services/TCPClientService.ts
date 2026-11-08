@@ -1,7 +1,7 @@
 import TcpSocket from 'react-native-tcp-socket';
 import EventEmitter from 'eventemitter3';
 import { AppState, Platform, Alert, type AppStateStatus } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { safeSecureStore as SecureStore } from '../utils/safeSecureStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MobileCrypto } from '../lib/MobileCrypto';
 import { ProtobufService } from './ProtobufService';
@@ -16,6 +16,7 @@ import {
   notifyPaymentOverdue,
   notifyForesight,
 } from '@/services/NotificationService';
+import { showMessageNotification } from '@/src/services/messageNotification';
 
 const HUB_PORT = 7447;
 const BACKOFF_SEQUENCE = [1000, 2000, 4000, 8000, 15000, 30000];
@@ -66,44 +67,16 @@ class TCPClientService extends EventEmitter {
     const bridgeStore = useBridgeStatus.getState();
     bridgeStore.setConnectionState('reconnecting');
 
-    // ── WEB/BRIDGE PATH: Use WebSocket bridge if Web or URL matches ws:// ────
-    if (Platform.OS === 'web' || host.startsWith('ws://') || host.startsWith('wss://')) {
-      connectViaWebSocket(host);
-      return;
-    }
-    // ── NATIVE PATH: Raw TCP ──────────────────────────────────────────────
-
-    if (this.socket) {
-      try { this.socket.destroy(); } catch (e) {}
+    // ── ALL PLATFORMS: Connect to PC Hub via WebSocket Bridge ────────────────
+    let wsUrl = host;
+    if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+      const cleanHost = host.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+      const targetPort = cleanHost.includes(':') ? '' : `:${port || HUB_PORT}`;
+      wsUrl = `ws://${cleanHost}${targetPort}`;
     }
 
-    console.log(`[TCP] Connecting to ${host}:${port} (Attempt ${this.backoffIndex + 1})`);
-
-    this.socket = TcpSocket.createConnection({ port, host }, async () => {
-      this.isConnected = true;
-      this.backoffIndex = 0;
-      this.missedHeartbeats = 0;
-      
-      bridgeStore.setConnectionState('connected');
-      bridgeStore.resetReconnectAttempts();
-      this.emit('connectionChange', true);
-      
-      await this.handleHandshake();
-      this.startHeartbeatWatchdog();
-      
-      const { NoxisSynapseService } = require('./NoxisSynapseService');
-      await NoxisSynapseService.reconcileState();
-    });
-
-    this.socket.on('data', (data: Uint8Array) => this.handleData(data));
-    
-    this.socket.on('error', (err: any) => {
-      console.error('[TCP] Socket Error:', err);
-    });
-
-    this.socket.on('close', () => {
-      this.handleDisconnect();
-    });
+    connectViaWebSocket(wsUrl);
+    return;
   }
 
   private async handleHandshake() {
@@ -508,10 +481,20 @@ function scheduleReconnect(
   );
   reconnectAttempts++;
 
-  console.log(`[WS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
+  // Multi-port fallback: alternate between primary port 7447 and fallback port 9001
+  let targetUrl = bridgeUrl;
+  if (reconnectAttempts % 2 === 1) {
+    if (bridgeUrl.includes(':7447')) {
+      targetUrl = bridgeUrl.replace(':7447', ':9001');
+    } else if (bridgeUrl.includes(':9001')) {
+      targetUrl = bridgeUrl.replace(':9001', ':7447');
+    }
+  }
+
+  console.log(`[WS] Reconnecting to ${targetUrl} in ${delay}ms (attempt ${reconnectAttempts})`);
 
   reconnectTimer = setTimeout(() => {
-    connectViaWebSocket(bridgeUrl);
+    connectViaWebSocket(targetUrl);
   }, delay);
 }
 
@@ -583,11 +566,21 @@ function handleBridgeMessage(msg: any): void {
         `[WS] Paired with Hub: ${msg.businessName} (${msg.tier}) Role: ${ackPayload.role}`
       );
 
-      // When Hub connection is established, drain any queued offline actions
       setTimeout(() => {
-        const { onHubReconnect } = require('@/src/services/OfflineSyncService');
-        onHubReconnect();
-      }, 1000); // Short delay to let connection settle
+        try {
+          const { drainQueue } = require('./OfflineSyncService');
+          const { KhataLedgerEngine } = require('./KhataLedgerEngine');
+          const { LocalDataManager } = require('./LocalDataManager');
+          Promise.all([
+            drainQueue().catch(() => {}),
+            KhataLedgerEngine.drain().catch(() => {}),
+          ]).then(() => {
+            LocalDataManager.forcePullFromHub().catch(() => {});
+          }).catch(() => {});
+        } catch (e) {
+          console.warn('[WS] OfflineSync reconnect trigger error:', e);
+        }
+      }, 500); // 500ms delay to let connection settle
       break;
     }
 
@@ -662,6 +655,70 @@ function handleBridgeMessage(msg: any): void {
       break;
     }
 
+    case 'MSG_INCOMING': {
+      const messageItem = msg.message || msg.payload || msg;
+      AsyncStorage.getItem('noxis_messages').then((existing) => {
+        const messages = JSON.parse(existing || '[]');
+        messages.unshift(messageItem);
+        const trimmed = messages.slice(0, 200);
+        AsyncStorage.setItem('noxis_messages', JSON.stringify(trimmed));
+      });
+      useBridgeStatusStore.getState().addMessage(messageItem);
+      showMessageNotification(messageItem);
+      break;
+    }
+
+    case 'MSG_ACK': {
+      const msgId = msg.messageId || msg.serverMessageId;
+      if (msgId) {
+        useBridgeStatusStore.getState().markMessageSent(msgId);
+      }
+      break;
+    }
+
+    case 'DATA_INVALIDATED': {
+      console.log('[WS] Data invalidated on PC Hub, syncing resource:', msg.resource);
+      try {
+        const { LocalDataManager } = require('./LocalDataManager');
+        LocalDataManager.forcePullFromHub().catch(() => {});
+        LocalDataManager.notify(msg.resource || 'all');
+      } catch (e) {
+        console.warn('[WS] Error handling DATA_INVALIDATED:', e);
+      }
+      break;
+    }
+
+    case 'KHATA_ACK': {
+      console.log('[WS] KHATA_ACK received from PC Hub for:', msg.idempotencyKey || msg.id);
+      try {
+        const iKey = msg.idempotencyKey;
+        AsyncStorage.getItem('noxis_khata_queue').then(async (raw) => {
+          const queue = JSON.parse(raw || '[]');
+          let modified = false;
+          const updated = queue.map((item: any) => {
+            if (!iKey || item.idempotencyKey === iKey || item.id === msg.id) {
+              item.synced = true;
+              modified = true;
+            }
+            return item;
+          });
+          if (modified) {
+            await AsyncStorage.setItem('noxis_khata_queue', JSON.stringify(updated));
+            const pending = updated.filter((e: any) => !e.synced).length;
+            useBridgeStatusStore.getState().setPendingCount(pending);
+          }
+        });
+      } catch (err) {
+        console.warn('[WS] Error handling KHATA_ACK:', err);
+      }
+      break;
+    }
+
+    case 'CRDT_SYNC_ACK': {
+      console.log('[WS] CRDT Sync acknowledged by PC Hub for:', msg.table, msg.entityId);
+      break;
+    }
+
     default:
       console.warn('[WS] Unhandled message:', msg.type);
   }
@@ -678,13 +735,13 @@ export function requestHubData(
       return;
     }
 
-    const requestId = `req_${Date.now().toString(36)}`;
+    const requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
 
-    // 8 second timeout — fall back to empty
+    // 2 second timeout — fast fallback so UI is never blocked or frozen
     const timeout = setTimeout(() => {
       wsSocket?.removeEventListener('message', handler);
       resolve([]);
-    }, 8000);
+    }, 2000);
 
     const handler = (event: MessageEvent) => {
       try {
@@ -698,12 +755,18 @@ export function requestHubData(
     };
 
     wsSocket.addEventListener('message', handler);
-    wsSocket.send(JSON.stringify({
-      type: 'DATA_REQUEST',
-      requestId,
-      resource,
-      params,
-    }));
+    try {
+      wsSocket.send(JSON.stringify({
+        type: 'DATA_REQUEST',
+        requestId,
+        resource,
+        params,
+      }));
+    } catch {
+      clearTimeout(timeout);
+      wsSocket.removeEventListener('message', handler);
+      resolve([]);
+    }
   });
 }
 
@@ -720,6 +783,80 @@ export function notifyHub(
     ...data,
     timestamp: Date.now(),
   }));
+}
+
+export async function sendWebSocketMessage(message: any): Promise<boolean> {
+  if (!wsSocket || wsSocket.readyState !== WebSocket.OPEN) {
+    return false;
+  }
+  try {
+    wsSocket.send(JSON.stringify(message));
+    return true;
+  } catch (err) {
+    console.error('[WS] sendWebSocketMessage error:', err);
+    return false;
+  }
+}
+
+/**
+ * Omni-Channel Mesh Delivery:
+ * Concurrently dispatches over high-speed Local WebSocket AND global Supabase Realtime Mesh.
+ * Ensures seamless messaging whether on factory Wi-Fi or remote 4G/Cloud.
+ */
+export async function sendMeshMessage(messagePayload: {
+  text: string;
+  priority?: 'normal' | 'urgent';
+  messageId?: string;
+  sender_name?: string;
+}): Promise<{ success: boolean; channel: 'local' | 'cloud' | 'queued' }> {
+  let delivered = false;
+  let usedChannel: 'local' | 'cloud' | 'queued' = 'queued';
+
+  const text = messagePayload.text;
+  const priority = messagePayload.priority || 'normal';
+  const messageId = messagePayload.messageId || `msg_${Date.now()}`;
+  const sender_name = messagePayload.sender_name || 'Terminal';
+
+  // 1. Try Local LAN WebSocket (Fast-path: <5ms)
+  if (wsSocket && wsSocket.readyState === WebSocket.OPEN) {
+    try {
+      wsSocket.send(JSON.stringify({
+        type: 'MSG_SEND',
+        text,
+        priority,
+        messageId,
+        sender_name,
+        payload: messagePayload,
+      }));
+      delivered = true;
+      usedChannel = 'local';
+      useBridgeStatusStore.getState().markMessageSent(messageId);
+    } catch (err) {
+      console.warn('[TCPClient] Local WS send failed:', err);
+    }
+  }
+
+  // 2. Concurrently dispatch over Cloud Realtime Mesh (Infinite range across factory & field)
+  try {
+    const { RealtimeMeshSyncEngine } = require('./RealtimeMeshSyncEngine');
+    const cloudOk = await RealtimeMeshSyncEngine.broadcastChatMessage({
+      ...messagePayload,
+      id: messageId,
+      messageId,
+      sender_type: 'device',
+      message_text: text,
+      created_at: new Date().toISOString(),
+    });
+    if (cloudOk) {
+      delivered = true;
+      if (usedChannel === 'queued') usedChannel = 'cloud';
+      useBridgeStatusStore.getState().markMessageSent(messageId);
+    }
+  } catch (err) {
+    console.warn('[TCPClient] Cloud Realtime send failed:', err);
+  }
+
+  return { success: delivered, channel: usedChannel };
 }
 
 export function getConnectionState():
