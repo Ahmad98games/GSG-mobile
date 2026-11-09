@@ -24,7 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { NoxisLogo } from '../../src/components/ui/NoxisLogo';
 import { smartConnect } from '../../src/services/ConnectionManager';
-import { connectViaWebSocket } from '../../src/services/TCPClientService';
+import { connectViaWebSocket, pairWithHub } from '../../src/services/TCPClientService';
 import { useBridgeStatusStore } from '../../src/stores/BridgeStatusStore';
 import { useBridgeStatus } from '../../src/store/BridgeStatusStore';
 import { useTierStore } from '../../src/stores/TierStore';
@@ -380,7 +380,7 @@ export default function PairScreen() {
       });
 
       setPairingStatus('connected');
-      setStatusMessage(`Connected via ${methodLabel}! Opening Dashboard...`);
+      setStatusMessage(`Paired with PC Hub via ${methodLabel}! Opening Dashboard...`);
       try {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch {}
@@ -412,15 +412,13 @@ export default function PairScreen() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch {}
 
-    const smartRes = await smartConnect({
-      bridgeUrl: discoveredHub.url,
-    });
-
-    if (smartRes.success) {
-      await finalizeConnection(smartRes.url, smartRes.method);
-    } else {
-      // Direct LAN fallback
+    const pairRes = await pairWithHub(discoveredHub.url, 6000);
+    if (pairRes.success) {
       await finalizeConnection(discoveredHub.url, 'local');
+    } else {
+      setPairingStatus('failed');
+      setStatusMessage('Connection failed');
+      setErrorDetails(pairRes.error || `Could not connect to ${discoveredHub.url}`);
     }
   };
 
@@ -434,20 +432,11 @@ export default function PairScreen() {
     const targetWs = `ws://${trimmedIp}:${portNum}`;
 
     setPairingStatus('connecting');
-    setStatusMessage(`Probing ${trimmedIp}:${portNum}...`);
+    setStatusMessage(`Connecting to ${trimmedIp}:${portNum}...`);
     setErrorDetails(null);
 
-    const smartRes = await smartConnect({
-      bridgeUrl: targetWs,
-    });
-
-    if (smartRes.success) {
-      await finalizeConnection(smartRes.url, smartRes.method);
-      return;
-    }
-
-    const probeRes = await probeEndpoint(targetWs, 2000);
-    if (probeRes.ok) {
+    const pairRes = await pairWithHub(targetWs, 6000);
+    if (pairRes.success) {
       await finalizeConnection(targetWs, 'local');
       return;
     }
@@ -455,7 +444,7 @@ export default function PairScreen() {
     setPairingStatus('failed');
     setStatusMessage(`Cannot connect to ${trimmedIp}`);
     setErrorDetails(
-      `Checked ${trimmedIp}:${portNum}. Verify PC Hub is running and Phone is on the same Wi-Fi.\nOr use Standalone Offline Mode.`
+      pairRes.error || `Checked ${trimmedIp}:${portNum}. Verify PC Hub is running and Phone is on the same Wi-Fi.`
     );
   };
 
@@ -529,29 +518,39 @@ export default function PairScreen() {
     } catch {}
 
     const target = parsePayloadTarget(data);
-    setStatusMessage(`Scanned ${target.wsUrl}...`);
+    setStatusMessage(`Pairing with PC at ${target.wsUrl}...`);
     setPairingStatus('connecting');
+    setErrorDetails(null);
 
-    const smartRes = await smartConnect({
-      bridgeUrl: target.wsUrl,
-      tunnelUrl: target.tunnelUrl,
-    });
+    // 1. Direct authoritative handshake with PC Hub via WebSocket
+    const pairRes = await pairWithHub(target.wsUrl, 6000);
+    if (pairRes.success) {
+      await finalizeConnection(target.wsUrl, 'local', target.tier);
+      return;
+    }
 
-    if (smartRes.success) {
-      await finalizeConnection(smartRes.url, smartRes.method, target.tier);
-    } else {
-      const probeRes = await probeEndpoint(target.wsUrl, 2000);
-      if (probeRes.ok) {
-        await finalizeConnection(target.wsUrl, 'local', target.tier);
-      } else {
-        setPairingStatus('failed');
-        setStatusMessage('QR connection failed');
-        setErrorDetails(`Could not connect to ${target.wsUrl}.\nMake sure Phone is on Wi-Fi and PC Hub is active.`);
-        setTimeout(() => {
-          isScanningRef.current = false;
-        }, 3000);
+    // 2. If direct LAN failed and tunnelUrl is present, try Tunnel
+    if (target.tunnelUrl) {
+      setStatusMessage(`Trying Secure Tunnel...`);
+      const tunnelRes = await pairWithHub(target.tunnelUrl, 6000);
+      if (tunnelRes.success) {
+        await finalizeConnection(target.tunnelUrl, 'tunnel', target.tier);
+        return;
       }
     }
+
+    // 3. Failed: report clear explanation to user
+    setPairingStatus('failed');
+    setStatusMessage('Pairing Failed');
+    setErrorDetails(
+      `Could not connect to PC Hub at ${target.wsUrl}.\n\n` +
+      `1. Make sure your Phone and PC are connected to the same Wi-Fi.\n` +
+      `2. Verify Noxis Hub is running on your PC.\n` +
+      `3. Verify PC IP address matches the QR code.`
+    );
+    setTimeout(() => {
+      isScanningRef.current = false;
+    }, 4000);
   };
 
   /**
@@ -567,21 +566,23 @@ export default function PairScreen() {
     setErrorDetails(null);
 
     const target = parsePayloadTarget(raw);
-    const smartRes = await smartConnect({
-      bridgeUrl: target.wsUrl,
-      tunnelUrl: target.tunnelUrl,
-    });
+    const pairRes = await pairWithHub(target.wsUrl, 6000);
+    if (pairRes.success) {
+      await finalizeConnection(target.wsUrl, 'local', target.tier);
+      return;
+    }
 
-    if (smartRes.success) {
-      await finalizeConnection(smartRes.url, smartRes.method);
-    } else {
-      const probeRes = await probeEndpoint(target.wsUrl, 2000);
-      if (probeRes.ok) {
-        await finalizeConnection(target.wsUrl, 'local');
-      } else {
-        await finalizeConnection(`ws://${KNOWN_PC_IP}:${KNOWN_PORT}`, 'local');
+    if (target.tunnelUrl) {
+      const tunnelRes = await pairWithHub(target.tunnelUrl, 6000);
+      if (tunnelRes.success) {
+        await finalizeConnection(target.tunnelUrl, 'tunnel', target.tier);
+        return;
       }
     }
+
+    setPairingStatus('failed');
+    setStatusMessage('Connection failed');
+    setErrorDetails(pairRes.error || `Could not connect to ${target.wsUrl}`);
   };
 
   const handleContinueOffline = async () => {

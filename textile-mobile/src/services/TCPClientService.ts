@@ -454,6 +454,7 @@ export async function connectViaWebSocket(
     console.log(`[WS] Disconnected: ${event.code} ${event.reason}`);
     wsSocket = null;
     tcpService.emit('connectionChange', false);
+    tcpService.emit('pairResult', { success: false, error: `Connection closed (${event.code})` });
     
     useBridgeStatusStore.getState().setStatus({
       hubOnline: false,
@@ -468,11 +469,63 @@ export async function connectViaWebSocket(
 
   wsSocket.onerror = (err) => {
     console.error('[WS] Socket error:', err);
+    tcpService.emit('pairResult', { success: false, error: 'Socket connection failed' });
     useBridgeStatusStore.getState().setStatus({
       hubOnline: false,
       syncStatus: 'offline',
     });
   };
+}
+
+/**
+ * Perform a real, synchronous pairing handshake with PC Hub.
+ * Connects to bridgeUrl, transmits PAIR_REQUEST, and waits for HUB_ACK / PAIR_ACK.
+ */
+export async function pairWithHub(
+  bridgeUrl: string,
+  timeoutMs: number = 7000
+): Promise<{ success: boolean; ack?: any; error?: string }> {
+  let cleanUrl = bridgeUrl.trim();
+  if (!cleanUrl.startsWith('ws://') && !cleanUrl.startsWith('wss://')) {
+    cleanUrl = `ws://${cleanUrl}`;
+  }
+
+  return new Promise(async (resolve) => {
+    let settled = false;
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        tcpService.off('pairResult', onResult);
+        resolve({
+          success: false,
+          error: `Could not reach PC Hub at ${cleanUrl}.\nPlease make sure Phone and PC are on the same Wi-Fi.`,
+        });
+      }
+    }, timeoutMs);
+
+    const onResult = (result: { success: boolean; ack?: any; error?: string }) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        tcpService.off('pairResult', onResult);
+        resolve(result);
+      }
+    };
+
+    tcpService.once('pairResult', onResult);
+
+    try {
+      await connectViaWebSocket(cleanUrl);
+    } catch (e: any) {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        tcpService.off('pairResult', onResult);
+        resolve({ success: false, error: e.message || 'Failed to initialize WebSocket' });
+      }
+    }
+  });
 }
 
 function scheduleReconnect(
@@ -503,7 +556,9 @@ function handleBridgeMessage(msg: any): void {
   const store = useBridgeStatusStore.getState();
 
   switch (msg.type) {
-    case 'HUB_ACK': {
+    case 'HUB_ACK':
+    case 'PAIR_ACK': {
+      tcpService.emit('pairResult', { success: true, ack: msg });
       const ackPayload = {
         businessName: msg.businessName || 'Noxis Factory',
         businessId: msg.businessId || 'biz_01',
@@ -601,6 +656,7 @@ function handleBridgeMessage(msg: any): void {
 
     case 'PAIRING_REJECTED': {
       console.error('[WS] Pairing rejected:', msg.reason);
+      tcpService.emit('pairResult', { success: false, error: msg.reason || 'Pairing rejected by PC Hub' });
       store.setStatus({
         hubOnline: false,
         syncStatus: 'offline',
